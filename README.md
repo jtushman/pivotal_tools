@@ -8,7 +8,7 @@ install
 -------
 
 ```bash
-pip install git+git//git@github.com/jtushman/pivotal_tools.git
+pip install git+ssh://git@github.com/jtushman/pivotal_tools.git
 ```
 
 
