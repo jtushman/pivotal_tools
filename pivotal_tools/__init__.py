@@ -1,12 +1,20 @@
 #!/usr/bin/env python
-"""Pivotal Readme
+"""Pivotal Tools
+
+A collection of tools to help with your pivotal workflow
+For now it only generates README but more to follow
+
+
+generate_readme
+---------------
+Will prompt you for a project.  And then list out your stories that are delivered or finished (not accepted)
+
 
 Usage:
-  pivotal_tools.py generate_readme [--project=<project_name>]
+  pivotal_tools.py generate_readme
 
 Options:
   -h --help     Show this screen.
-  --project=<project_name>  Name of specific project
 
 """
 from docopt import docopt
@@ -16,7 +24,6 @@ from urllib import quote
 import xml.etree.ElementTree as ET
 import os
 
-PROJECT_ID = '737117'
 TOKEN = os.getenv('PIVOTAL_TOKEN', None)
 
 
