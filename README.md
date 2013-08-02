@@ -3,7 +3,7 @@ pivotal_tools
 
 Set of helper tools to rock your pivotal process.  On the Command Line of course
 
-As of now, if only generates readme files.  But more to follow
+As of now, if only generates readme and changlogs.  But more to follow
 
 
 install
