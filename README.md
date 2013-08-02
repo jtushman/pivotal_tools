@@ -25,4 +25,8 @@ usage
 
 ```bash
 pivotal_tools generate_readme
+pivotal_tools generate_changelog
+
+pivotal_tools generate_changelog > changes.md
+pivotal_tools generate_readme >> readme.md
 ```

@@ -10,11 +10,19 @@ generate_readme
 Will prompt you for a project.  And then list out your stories that are delivered or finished (not accepted)
 
 
+generate_changelog
+---------------
+Will prompt you for a project.  And then list out your stories in markdown to append to your changes.md
+
+
 Usage:
-  pivotal_tools.py generate_readme
+  pivotal_tools.py generate_readme [--project-index=<pi>]
+  pivotal_tools.py generate_changelog [--project-index=<pi>]
 
 Options:
-  -h --help     Show this screen.
+  -h --help             Show this screen.
+  --project-index=<pi>  If you have multiple projects, this is the index that the project shows up in my prompt
+                        This is useful if you do not want to be prompted, and then you can pipe the output
 
 """
 from docopt import docopt
@@ -56,6 +64,13 @@ def print_stories(root):
         print
 
 
+def print_stories_for_changelog(root):
+    for child in root:
+        story_id = child.find('id').text
+        name = child.find('name').text
+        print '* {:14s} {}'.format('[{}]'.format(story_id), name)
+
+
 def get_project(project_id):
     url = "http://www.pivotaltracker.com/services/v3/projects/%s" % project_id
     response = perform_pivotal_request(url)
@@ -94,6 +109,29 @@ def generate_readme(project_id):
     print_stories(bug_root)
 
 
+def generate_changelog(project_id):
+    project = get_project(project_id)
+
+    title_string = 'Changes {}'.format(project['name'])
+
+    print
+    print title_string
+    print '=' * len(title_string)
+    print
+
+    print 'New Features'
+    print '============'
+    feature_root = get_story_tree(project_id, 'state:delivered,finished type:feature')
+    print_stories_for_changelog(feature_root)
+
+
+    print
+    print 'Bugs Fixed'
+    print '=========='
+    bug_root = get_story_tree(project_id, 'state:delivered,finished type:bug')
+    print_stories_for_changelog(bug_root)
+
+
 def list_projects():
     projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
     response = perform_pivotal_request(projects_url)
@@ -114,7 +152,16 @@ def get_project_by_index(index):
     return root[index].find('id').text
 
 
-def prompt_project():
+def prompt_project(arguments):
+
+    if arguments['--project-index'] is not None:
+        try:
+            project = get_project_by_index(int(arguments['--project-index']) - 1)
+            return project
+        except:
+            print 'Yikes, that did not work -- try again?'
+            exit()
+
     while True:
         print "Select a Project:"
         list_projects()
@@ -149,9 +196,12 @@ def check_api_token():
 def main():
     check_api_token()
     arguments = docopt(__doc__)
-    if 'generate_readme' in arguments:
-        project_id = prompt_project()
+    if arguments['generate_readme']:
+        project_id = prompt_project(arguments)
         generate_readme(project_id)
+    elif arguments['generate_changelog']:
+        project_id = prompt_project(arguments)
+        generate_changelog(project_id)
     else:
         print arguments
 
