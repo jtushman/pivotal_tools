@@ -29,6 +29,6 @@ usage
 pivotal_tools generate_readme
 pivotal_tools generate_changelog
 
-pivotal_tools generate_changelog > changes.md
-pivotal_tools generate_readme >> readme.md
+pivotal_tools generate_changelog --project-index=4 > changes.md
+pivotal_tools generate_readme --project-index=4 >> readme.md
 ```
