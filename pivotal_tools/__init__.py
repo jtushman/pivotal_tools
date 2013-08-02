@@ -52,23 +52,31 @@ def get_story_tree(project_id, filter_string):
 
 
 def print_stories(root):
-    for child in root:
-        story_id = child.find('id').text
-        name = child.find('name').text
-        formatted_title = "[{}] {}".format(story_id, name)[:140]
+    if len(root) > 0:
+        for child in root:
+            story_id = child.find('id').text
+            name = child.find('name').text
+            formatted_title = "[{}] {}".format(story_id, name)[:140]
 
-        print formatted_title
-        print '-' * len(formatted_title)
-        print child.find('description').text or 'No Description'
-        print
+            print formatted_title
+            print '-' * len(formatted_title)
+            print child.find('description').text or 'No Description'
+            print
+            print
+    else:
+        print 'None'
         print
 
 
 def print_stories_for_changelog(root):
-    for child in root:
-        story_id = child.find('id').text
-        name = child.find('name').text
-        print '* {:14s} {}'.format('[{}]'.format(story_id), name)
+    if len(root) > 0:
+        for child in root:
+            story_id = child.find('id').text
+            name = child.find('name').text
+            print '* {:14s} {}'.format('[{}]'.format(story_id), name)
+    else:
+        print 'None'
+        print
 
 
 def get_project(project_id):
@@ -108,6 +116,12 @@ def generate_readme(project_id):
     bug_root = get_story_tree(project_id, 'state:delivered,finished type:bug')
     print_stories(bug_root)
 
+    print 'Known Issues'
+    print '=========='
+    bug_root = get_story_tree(project_id, 'state:unscheduled,unstarted,started,rejected type:bug')
+    print_stories_for_changelog(bug_root)
+
+
 
 def generate_changelog(project_id):
     project = get_project(project_id)
@@ -130,6 +144,11 @@ def generate_changelog(project_id):
     print '=========='
     bug_root = get_story_tree(project_id, 'state:delivered,finished type:bug')
     print_stories_for_changelog(bug_root)
+
+    print 'Known Issues'
+    print '=========='
+    issues_root = get_story_tree(project_id, 'state:unscheduled,unstarted,started,rejected type:bug')
+    print_stories_for_changelog(issues_root)
 
 
 def list_projects():
