@@ -15,7 +15,7 @@ List out projects stories that are delivered or finished (not accepted), titles 
 show_stories
 ---------------
 Lists all stories for a given project (will prompt you if not specified)
-Can filter by user with the --for=<user_name> option
+Can filter by user with the `for` option
 
 show_story
 ---------------
