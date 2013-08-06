@@ -3,8 +3,6 @@ pivotal_tools
 
 Set of helper tools to rock your pivotal process.  On the Command Line of course
 
-As of now, if only generates readme and changlogs.  But more to follow
-
 
 install
 -------
@@ -26,9 +24,41 @@ usage
 -----
 
 ```bash
-pivotal_tools generate_readme
-pivotal_tools generate_changelog
+A collection of tools to help with your pivotal workflow
 
-pivotal_tools generate_changelog --project-index=4 > changes.md
-pivotal_tools generate_readme --project-index=4 >> readme.md
+generate_readme
+---------------
+List out projects stories that are delivered or finished (not accepted), including description
+
+
+generate_changelog
+---------------
+List out projects stories that are delivered or finished (not accepted), titles only
+
+show_stories
+---------------
+Lists all stories for a given project (will prompt you if not specified)
+Can filter by user with the --for=<user_name> option
+
+show_story
+---------------
+Show the details for a given story.  passing the project-index parameter will make it faster
+
+browser_open
+---------------
+Will open the given story in a browser.  passing the project-index parameter will make it faster
+
+
+Usage:
+  pivotal_tools generate_readme [--project-index=<pi>]
+  pivotal_tools generate_changelog [--project-index=<pi>]
+  pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>]
+  pivotal_tools show_story <story_id> [--project-index=<pi>]
+  pivotal_tools browser_open <story_id> [--project-index=<pi>]
+
+Options:
+  -h --help             Show this screen.
+  --for=<user_name>     Username, or initials
+  --project-index=<pi>  If you have multiple projects, this is the index that the project shows up in my prompt
+                        This is useful if you do not want to be prompted, and then you can pipe the output
 ```
