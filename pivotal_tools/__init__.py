@@ -25,6 +25,10 @@ browser_open
 ---------------
 Will open the given story in a browser.  passing the project-index parameter will make it faster
 
+scrum
+---------------
+Will list stories and bugs that team members are working on.  Grouped by team member
+
 
 Usage:
   pivotal_tools generate_readme [--project-index=<pi>]
@@ -32,6 +36,7 @@ Usage:
   pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>]
   pivotal_tools show_story <story_id> [--project-index=<pi>]
   pivotal_tools browser_open <story_id> [--project-index=<pi>]
+  pivotal_tools scrum [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
@@ -349,11 +354,32 @@ def show_story(story_id, arguments):
             location = attachment.find('url').text
             print "{} {}".format(description, colored(location,'blue',attrs=['underline']))
 
-
     print
 
 
-    #print colored(resposne.read(), 'white', attrs=['bold'])
+def scrum(project_id):
+    search_string = 'state:started'
+    stories_root = get_story_tree(project_id, search_string)
+    stories_by_owner = {}
+    for story_node in stories_root:
+        owner_node = story_node.find('owned_by')
+        if owner_node is not None:
+            owner_full_name = owner_node.text
+            if owner_full_name in stories_by_owner:
+                stories_by_owner[owner_full_name].append(story_node)
+            else:
+                stories_by_owner[owner_full_name] = [story_node]
+        else:
+            continue
+
+    for owner in stories_by_owner:
+        print colored(owner,'white', attrs=['bold'])
+        for story in stories_by_owner[owner]:
+            story_id = story.find('id').text
+            story_name = story.find('name').text
+            print "   #{:12s}{:9s} {}".format(story_id, estimate_visual(story), story_name)
+
+
 
 
 def main():
@@ -372,6 +398,9 @@ def main():
         show_story(arguments['<story_id>'], arguments)
     elif arguments['browser_open']:
         browser_open(arguments['<story_id>'], arguments)
+    elif arguments['scrum']:
+        project_id = prompt_project(arguments)
+        scrum(project_id)
     else:
         print arguments
 
