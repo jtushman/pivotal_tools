@@ -68,18 +68,54 @@ def get_story_tree(project_id, filter_string):
     stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(project_id, story_filter)
 
     response = perform_pivotal_request(stories_url)
-    #print response.read()
-
     root = ET.fromstring(response.read())
     return root
+
+
+class Story(object):
+
+    story_id = None
+    name = None
+    description = None
+    owned_by = None
+    story_type = None
+    estimate = None
+    state = None
+
+    @classmethod
+    def from_node(cls, node):
+        def parse_text(node, key):
+            element = node.find(key)
+            if element is not None:
+                return element.text
+            else:
+                return None
+
+        def parse_int(node, key):
+            element = node.find(key)
+            if element is not None:
+                return int(element.text)
+            else:
+                return None
+
+        story = Story()
+        story.story_id = parse_text(node, 'id')
+        story.name = parse_text(node, 'name')
+        story.owned_by = parse_text(node, 'owned_by')
+        story.story_type = parse_text(node, 'story_type')
+        story.state = parse_text(node, 'current_state')
+        story.description = parse_text(node, 'description')
+        story.estimate = parse_int(node, 'estimate')
+        return story
+
+
 
 
 def print_stories(root):
     if len(root) > 0:
         for child in root:
-            story_id = child.find('id').text
-            name = child.find('name').text
-            formatted_title = "[{}] {}".format(story_id, name)[:140]
+            story = Story.from_node(child)
+            formatted_title = "[{}] {}".format(story.story_id, story.name)[:140]
 
             print formatted_title
             print '-' * len(formatted_title)
@@ -94,9 +130,8 @@ def print_stories(root):
 def print_stories_for_changelog(root):
     if len(root) > 0:
         for child in root:
-            story_id = child.find('id').text
-            name = child.find('name').text
-            print '* {:14s} {}'.format('[{}]'.format(story_id), name)
+            story = Story.from_node(child)
+            print '* {:14s} {}'.format('[{}]'.format(story.story_id), story.name)
     else:
         print 'None'
         print
@@ -236,27 +271,21 @@ def check_api_token():
 
 
 def initials(full_name):
-    return ''.join([s[0] for s in full_name.split(' ')]).upper()
-
-def owned_by_initials(node):
-    full_name_node = node.find('owned_by')
-    if full_name_node is not None:
-        full_name = full_name_node.text
-        return initials(full_name)
+    if full_name is not None:
+        return ''.join([s[0] for s in full_name.split(' ')]).upper()
     else:
         return ''
 
 
-def estimate_visual(node):
-    estimate_node = node.find('estimate')
-    if estimate_node is not None:
-        estimate = int(estimate_node.text)
+def estimate_visual(estimate):
+    if estimate is not None:
         return '[{:8s}]'.format('*' * estimate)
     else:
         return '[        ]'
 
+
 def list_stories(project_id, arguments):
-    search_string = 'state:unscheduled,unstarted,rejected'
+    search_string = 'state:unscheduled,unstarted,rejected,started'
     if arguments['--for'] is not None:
         search_string += " owner:{}".format(arguments['--for'])
 
@@ -265,10 +294,13 @@ def list_stories(project_id, arguments):
 
     if len(stories_root) > 0:
         for child in stories_root:
-            story_id = child.find('id').text
-            name = child.find('name').text
-            story_type = child.find('story_type').text
-            print '{:14s}{:4s}{:9s}{:10s} {}'.format('#{}'.format(story_id), owned_by_initials(child), story_type, estimate_visual(child), name)
+            story = Story.from_node(child)
+            print '{:14s}{:4s}{:9s}{:13s}{:10s} {}'.format('#{}'.format(story.story_id),
+                                                     initials(story.owned_by),
+                                                     story.story_type,
+                                                     story.state,
+                                                     estimate_visual(story.estimate),
+                                                     story.name)
     else:
         print 'None'
         print
@@ -320,20 +352,17 @@ def show_story(story_id, arguments):
     resposne = perform_pivotal_request(story_url)
     #print resposne.read()
     root = ET.fromstring(resposne.read())
-    story_id = root.find('id').text
-    story_url = root.find('url').text
-    name = root.find('name').text
-    story_type = root.find('story_type').text
-    description = root.find('description').text
+    story = Story.from_node(root)
+
     print
-    print colored('{:12s}{:4s}{:9s}{:10s} {}'.format('#{}'.format(story_id),
-                                             owned_by_initials(root),
-                                             story_type,
-                                             estimate_visual(root),
-                                             name),'white', attrs=['bold'])
+    print colored('{:12s}{:4s}{:9s}{:10s} {}'.format('#{}'.format(story.story_id),
+                                                     initials(story.owned_by),
+                                                     story.story_type,
+                                                     estimate_visual(story.estimate),
+                                                     story.name), 'white', attrs=['bold'])
     print
-    print colored("Story Url: ",'white', attrs=['bold']) + colored(story_url,'blue',attrs=['underline'])
-    print colored("Description: ",'white', attrs=['bold']) + description
+    print colored("Story Url: ", 'white', attrs=['bold']) + colored(story_url, 'blue', attrs=['underline'])
+    print colored("Description: ", 'white', attrs=['bold']) + story.description
 
 
     notes = root.find('notes')
@@ -362,22 +391,24 @@ def scrum(project_id):
     stories_root = get_story_tree(project_id, search_string)
     stories_by_owner = {}
     for story_node in stories_root:
+        story = Story.from_node(story_node)
         owner_node = story_node.find('owned_by')
         if owner_node is not None:
             owner_full_name = owner_node.text
             if owner_full_name in stories_by_owner:
-                stories_by_owner[owner_full_name].append(story_node)
+                stories_by_owner[owner_full_name].append(story)
             else:
-                stories_by_owner[owner_full_name] = [story_node]
+                stories_by_owner[owner_full_name] = [story]
         else:
             continue
 
     for owner in stories_by_owner:
         print colored(owner,'white', attrs=['bold'])
         for story in stories_by_owner[owner]:
-            story_id = story.find('id').text
-            story_name = story.find('name').text
-            print "   #{:12s}{:9s} {}".format(story_id, estimate_visual(story), story_name)
+            print "   #{:12s}{:9s} {:7s} {}".format(story.story_id,
+                                              estimate_visual(story.estimate),
+                                              story.story_type,
+                                              story.name)
 
 
 
