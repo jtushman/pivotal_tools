@@ -81,15 +81,24 @@ class Story(object):
     story_type = None
     estimate = None
     state = None
+    labels = ""
+
+    @property
+    def first_label(self):
+        return self.labels.split(',')[0]
 
     @classmethod
     def from_node(cls, node):
         def parse_text(node, key):
             element = node.find(key)
             if element is not None:
-                return element.text
+                text = element.text
+                if text is not None:
+                    return text.strip()
+                else:
+                    return ''
             else:
-                return None
+                return ''
 
         def parse_int(node, key):
             element = node.find(key)
@@ -106,9 +115,8 @@ class Story(object):
         story.state = parse_text(node, 'current_state')
         story.description = parse_text(node, 'description')
         story.estimate = parse_int(node, 'estimate')
+        story.labels = parse_text(node, 'labels')
         return story
-
-
 
 
 def print_stories(root):
@@ -119,7 +127,7 @@ def print_stories(root):
 
             print formatted_title
             print '-' * len(formatted_title)
-            print child.find('description').text or 'No Description'
+            print story.description or 'No Description'
             print
             print
     else:
@@ -131,7 +139,12 @@ def print_stories_for_changelog(root):
     if len(root) > 0:
         for child in root:
             story = Story.from_node(child)
-            print '* {:14s} {}'.format('[{}]'.format(story.story_id), story.name)
+            story_string = ""
+            if story.labels is not None and len(story.labels) > 0:
+                story_string += "[{}] ".format(story.labels)
+
+            story_string += story.name
+            print '* {:14s} {}'.format('[{}]'.format(story.story_id), story_string)
     else:
         print 'None'
         print
@@ -149,6 +162,9 @@ def get_project(project_id):
     return project
 
 
+def bold(string):
+    return colored(string, 'white', attrs=['bold'])
+
 def generate_readme(project_id):
     project = get_project(project_id)
 
@@ -159,8 +175,8 @@ def generate_readme(project_id):
     print '=' * len(readme_string)
     print
 
-    print 'New Features'
-    print '============'
+    print bold('New Features')
+    print bold('============')
     print
 
     feature_root = get_story_tree(project_id, 'state:delivered,finished type:feature')
@@ -187,24 +203,32 @@ def generate_changelog(project_id):
     title_string = 'Changes {}'.format(project['name'])
 
     print
-    print title_string
-    print '=' * len(title_string)
+    print bold(title_string)
+    print bold('=' * len(title_string))
     print
 
-    print 'New Features'
-    print '============'
+    print bold('New Features')
+    print bold('============')
     feature_root = get_story_tree(project_id, 'state:delivered,finished type:feature')
-    print_stories_for_changelog(feature_root)
+    features_by_tag = get_stories_by_label(feature_root)
+
+    for label in features_by_tag:
+        print bold(label.title())
+        for story in features_by_tag[label]:
+            print '    * {:14s} {}'.format('[{}]'.format(story.story_id), story.name)
+
+    #print_stories_for_changelog(feature_root)
 
 
     print
-    print 'Bugs Fixed'
-    print '=========='
+    print bold('Bugs Fixed')
+    print bold('==========')
     bug_root = get_story_tree(project_id, 'state:delivered,finished type:bug')
     print_stories_for_changelog(bug_root)
 
-    print 'Known Issues'
-    print '=========='
+    print
+    print bold('Known Issues')
+    print bold('==========')
     issues_root = get_story_tree(project_id, 'state:unscheduled,unstarted,started,rejected type:bug')
     print_stories_for_changelog(issues_root)
 
@@ -346,6 +370,7 @@ def browser_open(story_id, arguments):
     story_url = "https://www.pivotaltracker.com/s/projects/{}/stories/{}".format(project_id, story_id)
     webbrowser.open(story_url)
 
+
 def show_story(story_id, arguments):
     project_id = find_project_for_story(story_id, arguments)
     story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project_id,story_id)
@@ -386,9 +411,7 @@ def show_story(story_id, arguments):
     print
 
 
-def scrum(project_id):
-    search_string = 'state:started'
-    stories_root = get_story_tree(project_id, search_string)
+def get_stories_by_owner(stories_root):
     stories_by_owner = {}
     for story_node in stories_root:
         story = Story.from_node(story_node)
@@ -401,9 +424,29 @@ def scrum(project_id):
                 stories_by_owner[owner_full_name] = [story]
         else:
             continue
+    return stories_by_owner
+
+
+def get_stories_by_label(stories_root):
+    stories = {}
+    for story_node in stories_root:
+        story = Story.from_node(story_node)
+        label = story.first_label or 'Other'
+        if label in stories:
+            stories[label].append(story)
+        else:
+            stories[label] = [story]
+
+    return stories
+
+
+def scrum(project_id):
+    search_string = 'state:started'
+    stories_root = get_story_tree(project_id, search_string)
+    stories_by_owner = get_stories_by_owner(stories_root)
 
     for owner in stories_by_owner:
-        print colored(owner,'white', attrs=['bold'])
+        print colored(owner, 'white', attrs=['bold'])
         for story in stories_by_owner[owner]:
             print "   #{:12s}{:9s} {:7s} {}".format(story.story_id,
                                               estimate_visual(story.estimate),
