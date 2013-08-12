@@ -16,6 +16,7 @@ show_stories
 ---------------
 Lists all stories for a given project (will prompt you if not specified)
 Can filter by user with the `for` option
+By default show the top 20 stories, can specify more (or less) with the number option
 
 show_story
 ---------------
@@ -33,7 +34,7 @@ Will list stories and bugs that team members are working on.  Grouped by team me
 Usage:
   pivotal_tools generate_readme [--project-index=<pi>]
   pivotal_tools generate_changelog [--project-index=<pi>]
-  pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>]
+  pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
   pivotal_tools show_story <story_id> [--project-index=<pi>]
   pivotal_tools browser_open <story_id> [--project-index=<pi>]
   pivotal_tools scrum [--project-index=<pi>]
@@ -45,13 +46,18 @@ Options:
                         This is useful if you do not want to be prompted, and then you can pipe the output
 
 """
-from docopt import docopt
 
+#Core Imports
 import urllib2
 from urllib import quote
 import xml.etree.ElementTree as ET
 import os
 import webbrowser
+from itertools import islice
+
+
+#3rd Party Imports
+from docopt import docopt
 from termcolor import colored
 
 TOKEN = os.getenv('PIVOTAL_TOKEN', None)
@@ -165,6 +171,7 @@ def get_project(project_id):
 def bold(string):
     return colored(string, 'white', attrs=['bold'])
 
+
 def generate_readme(project_id):
     project = get_project(project_id)
 
@@ -194,7 +201,6 @@ def generate_readme(project_id):
     print '=========='
     bug_root = get_story_tree(project_id, 'state:unscheduled,unstarted,started,rejected type:bug')
     print_stories_for_changelog(bug_root)
-
 
 
 def generate_changelog(project_id):
@@ -295,7 +301,7 @@ def check_api_token():
 
 
 def initials(full_name):
-    if full_name is not None:
+    if full_name is not None and len(full_name) > 0:
         return ''.join([s[0] for s in full_name.split(' ')]).upper()
     else:
         return ''
@@ -316,18 +322,26 @@ def list_stories(project_id, arguments):
     stories_root = get_story_tree(project_id, search_string)
 
 
-    if len(stories_root) > 0:
-        for child in stories_root:
+    number_of_stories = 20
+    if arguments['--number'] is not None:
+        number_of_stories = int(arguments['--number'])
+    else:
+        print
+        print "Showing the top 20 stories, if you want to show more, specify number with the --number option"
+        print
+
+
+    if len(stories_root) == 0:
+        print "None"
+    else:
+        for child in islice(stories_root, number_of_stories):
             story = Story.from_node(child)
             print '{:14s}{:4s}{:9s}{:13s}{:10s} {}'.format('#{}'.format(story.story_id),
-                                                     initials(story.owned_by),
-                                                     story.story_type,
-                                                     story.state,
-                                                     estimate_visual(story.estimate),
-                                                     story.name)
-    else:
-        print 'None'
-        print
+                                                       initials(story.owned_by),
+                                                       story.story_type,
+                                                       story.state,
+                                                       estimate_visual(story.estimate),
+                                                       story.name)
 
 
 def find_project_for_story(story_id, arguments):
@@ -439,11 +453,23 @@ def get_stories_by_label(stories_root):
 
     return stories
 
+def pretty_date():
+    from datetime import datetime
+    return datetime.now().strftime('%b %d, %Y')
+
+
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
 
 def scrum(project_id):
-    search_string = 'state:started'
+    search_string = 'state:started,rejected'
+    project = get_project(project_id)
     stories_root = get_story_tree(project_id, search_string)
     stories_by_owner = get_stories_by_owner(stories_root)
+
+    print bold("{} SCRUM -- {}".format(project['name'], pretty_date()))
+    print
 
     for owner in stories_by_owner:
         print colored(owner, 'white', attrs=['bold'])
@@ -453,10 +479,8 @@ def scrum(project_id):
                                               story.story_type,
                                               story.name)
 
-
-
-
 def main():
+    clear()
     check_api_token()
     arguments = docopt(__doc__)
     if arguments['generate_readme']:
