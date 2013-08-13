@@ -100,14 +100,6 @@ def parse_int(node, key):
         return None
 
 
-def get_story_tree(project_id, filter_string):
-    story_filter = quote(filter_string, safe='')
-    stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(project_id, story_filter)
-
-    response = perform_pivotal_get(stories_url)
-    root = ET.fromstring(response.text)
-    return root
-
 
 class Note(object):
 
@@ -205,8 +197,27 @@ class Project(object):
         name = parse_text(project_node, 'name')
         return Project(project_id, name)
 
+    def get_story_tree(self, filter_string):
+        story_filter = quote(filter_string, safe='')
+        stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
+
+        response = perform_pivotal_get(stories_url)
+        root = ET.fromstring(response.text)
+        return root
 
 
+    def unestimated_stories(self):
+        stories = []
+        search_string = 'type:feature state:unstarted'
+        stories_root = self.get_story_tree(search_string)
+
+        if stories_root is not None:
+            for story_node in stories_root:
+                story = Story.from_node(story_node)
+                if int(story.estimate) == -1:
+                    stories.append(story)
+
+        return stories
 
 
 def bold(string):
@@ -224,7 +235,7 @@ def generate_changelog(project):
 
     print bold('New Features')
     print bold('============')
-    feature_root = get_story_tree(project.project_id, 'state:delivered,finished type:feature')
+    feature_root = project.get_story_tree('state:delivered,finished type:feature')
     features_by_tag = get_stories_by_label(feature_root)
 
     for label in features_by_tag:
@@ -252,13 +263,13 @@ def generate_changelog(project):
     print
     print bold('Bugs Fixed')
     print bold('==========')
-    bug_root = get_story_tree(project.project_id, 'state:delivered,finished type:bug')
+    bug_root = project.get_story_tree('state:delivered,finished type:bug')
     print_stories_for_changelog(bug_root)
 
     print
     print bold('Known Issues')
     print bold('==========')
-    issues_root = get_story_tree(project.project_id, 'state:unscheduled,unstarted,started,rejected type:bug')
+    issues_root = project.get_story_tree('state:unscheduled,unstarted,started,rejected type:bug')
     print_stories_for_changelog(issues_root)
 
 
@@ -343,8 +354,7 @@ def list_stories(project, arguments):
     if arguments['--for'] is not None:
         search_string += " owner:{}".format(arguments['--for'])
 
-    stories_root = get_story_tree(project.project_id, search_string)
-
+    stories_root = project.get_story_tree(search_string)
 
     number_of_stories = 20
     if arguments['--number'] is not None:
@@ -449,6 +459,7 @@ def show_story(story_id, arguments):
     print
 
 
+# FIXME: Use our models, vs working with nodes
 def get_stories_by_owner(stories_root):
     stories_by_owner = {}
     for story_node in stories_root:
@@ -465,6 +476,7 @@ def get_stories_by_owner(stories_root):
     return stories_by_owner
 
 
+# FIXME: Use our models, vs working with nodes
 def get_stories_by_label(stories_root):
     stories = {}
     for story_node in stories_root:
@@ -489,19 +501,21 @@ def clear():
 
 def scrum(project):
     search_string = 'state:started,rejected'
-    stories_root = get_story_tree(project.project_id, search_string)
+    stories_root = project.get_story_tree(search_string)
     stories_by_owner = get_stories_by_owner(stories_root)
 
     print bold("{} SCRUM -- {}".format(project.name, pretty_date()))
     print
 
     for owner in stories_by_owner:
-        print colored(owner, 'white', attrs=['bold'])
+        print bold(owner)
         for story in stories_by_owner[owner]:
             print "   #{:12s}{:9s} {:7s} {}".format(story.story_id,
                                               estimate_visual(story.estimate),
                                               story.story_type,
                                               story.name)
+
+        print
 
 
 def pretty_print_story(story):
@@ -558,16 +572,13 @@ def get_column_dimensions():
 
 
 def poker(project):
-    search_string = 'type:feature state:unstarted estimate:-1'
-    stories_root = get_story_tree(project.project_id, search_string)
 
-    total_stories = len(stories_root)
-    for idx, story_node in enumerate(stories_root):
+    total_stories = len(project.unestimated_stories())
+    for idx, story in enumerate(project.unestimated_stories()):
         clear()
         rows, cols = get_column_dimensions()
         print "{} PLANNING POKER SESSION [{}]".format(project.name.upper(), bold("{}/{} Stories Estimated".format(idx+1, total_stories)))
         print "-" * cols
-        story = Story.from_node(story_node)
         pretty_print_story(story)
         prompt_estimation(story)
     else:
