@@ -73,7 +73,6 @@ def _perform_pivotal_get(url):
 
 
 def _perform_pivotal_put(url):
-
     headers = {'X-TrackerToken': TOKEN, 'Content-Length': 0}
     response = requests.put(url, headers=headers)
     response.raise_for_status()
@@ -81,6 +80,7 @@ def _perform_pivotal_put(url):
 
 
 def _parse_text(node, key):
+    """parses test from an ElementTree node, if not found returns empty string"""
     element = node.find(key)
     if element is not None:
         text = element.text
@@ -93,6 +93,7 @@ def _parse_text(node, key):
 
 
 def _parse_int(node, key):
+    """parses an int from an ElementTree node, if not found returns None"""
     element = node.find(key)
     if element is not None:
         return int(element.text)
@@ -101,7 +102,7 @@ def _parse_int(node, key):
 
 
 class Note(object):
-
+    """object representation of a Pivotal Note, should be accessed from story.notes"""
     def __init__(self, note_id, text, author):
         self.note_id = note_id
         self.text = text
@@ -109,7 +110,7 @@ class Note(object):
 
 
 class Attachment(object):
-
+    """object representation of a Pivotal attachment, should be accessed from story.attachments"""
     def __init__(self, attachment_id, description, url):
         self.attachment_id = attachment_id
         self.description = description
@@ -117,7 +118,7 @@ class Attachment(object):
 
 
 class Story(object):
-
+    """object representation of a Pivotal story"""
     def __init__(self):
         self.story_id = None
         self.project_id = None
@@ -135,10 +136,12 @@ class Story(object):
 
     @property
     def first_label(self):
+        """returns the first label if any from labels.  Used for grouping"""
         return self.labels.split(',')[0]
 
     @classmethod
     def from_node(cls, node):
+        """instantiates a Story object from an elementTree node, build child notes and attachment lists"""
 
         story = Story()
         story.story_id = _parse_text(node, 'id')
@@ -172,16 +175,15 @@ class Story(object):
 
         return story
 
-    def notes(self):
-        pass
-
     def assign_estimate(self, estimate):
+        """changes the estimate of a story"""
         update_story_url ="http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}?story[estimate]={}".format(self.project_id, self.story_id, estimate)
         response = _perform_pivotal_put(update_story_url)
         print response.text
 
 
 class Project(object):
+    """object representation of a Pivotal Project"""
 
     def __init__(self, project_id, name):
         self.project_id = project_id
@@ -197,6 +199,11 @@ class Project(object):
         return Project(project_id, name)
 
     def get_stories(self, filter_string):
+        """Given a filter strong, returns an list of stories matching that filter.  If none will return an empty list
+        Look at [link](https://www.pivotaltracker.com/help/faq#howcanasearchberefined) for syntax
+
+        """
+
         story_filter = quote(filter_string, safe='')
         stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
 
@@ -208,7 +215,6 @@ class Project(object):
     def unestimated_stories(self):
         stories = self.get_stories('type:feature state:unstarted')
         return [story for story in stories if int(story.estimate) == -1]
-
 
     def in_progress_stories(self):
         return self.get_stories('state:started,rejected')
@@ -225,6 +231,13 @@ class Project(object):
 
 ## Main Methods
 def generate_changelog(project):
+    """Generate a Changelog for the current project.  It is grouped into 3 sections:
+    * New Features
+    * Bugs Fixed
+    * Known Issues
+
+    The new features section is grouped by label for easy comprehension
+    """
 
     title_string = 'Change Log {}'.format(project.name)
 
@@ -271,6 +284,11 @@ def generate_changelog(project):
 
 
 def show_stories(project, arguments):
+    """Shows the top stories
+    By default it will show the top 20.  But that change be changed by the --number arguement
+    You can further filter the list by passing the --for argument and pass the initials of the user
+    """
+
     search_string = 'state:unscheduled,unstarted,rejected,started'
     if arguments['--for'] is not None:
         search_string += " owner:{}".format(arguments['--for'])
@@ -300,6 +318,10 @@ def show_stories(project, arguments):
 
 
 def show_story(story_id, arguments):
+    """Shows the Details for a single story
+
+    Will find the associate project, then look up the story and print of the details
+    """
     project = find_project_for_story(story_id, arguments)
     story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project.project_id, story_id)
     resposne = _perform_pivotal_get(story_url)
@@ -333,6 +355,9 @@ def show_story(story_id, arguments):
 
 
 def scrum(project):
+    """ CLI Visual Aid for running the daily SCRUM meeting.
+        Prints an list of stories that people are working on grouped by user
+    """
 
     stories = project.in_progress_stories()
     stories_by_owner = group_stories_by_owner(stories)
@@ -352,6 +377,11 @@ def scrum(project):
 
 
 def poker(project):
+    """CLI driven tool to help facilitate the periodic poker planning session
+
+    Will loop through and display unestimated stories, and prompt the team for an estimate.
+    You can also open the current story in a browser for additional editing
+    """
 
     total_stories = len(project.unestimated_stories())
     for idx, story in enumerate(project.unestimated_stories()):
@@ -366,6 +396,7 @@ def poker(project):
 
 
 def browser_open(story_id, arguments):
+    """Open the given story in a browser"""
 
     project_id = find_project_for_story(story_id, arguments)
     story_url = "https://www.pivotaltracker.com/s/projects/{}/stories/{}".format(project_id, story_id)
@@ -378,17 +409,7 @@ def bold(string):
     return colored(string, 'white', attrs=['bold'])
 
 
-def list_projects():
-    projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
-    response = _perform_pivotal_get(projects_url)
-    root = ET.fromstring(response.text)
 
-    i = 0
-    for child in root:
-        i += 1
-        project_name = child.find('name').text
-        project_id = child.find('id').text
-        print "[{}] {}".format(i, project_name)
 
 
 def get_project_by_index(index):
@@ -400,6 +421,20 @@ def get_project_by_index(index):
 
 
 def prompt_project(arguments):
+    """prompts the user for a project, if not passed in as a argument"""
+
+    def list_projects():
+        projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
+        response = _perform_pivotal_get(projects_url)
+        root = ET.fromstring(response.text)
+
+        i = 0
+        for child in root:
+            i += 1
+            project_name = child.find('name').text
+            project_id = child.find('id').text
+            print "[{}] {}".format(i, project_name)
+
 
     if arguments['--project-index'] is not None:
         try:
@@ -426,6 +461,8 @@ def prompt_project(arguments):
 
 
 def check_api_token():
+    """Check to see if the API Token is set, else give instructions"""
+
     token = os.getenv('PIVOTAL_TOKEN', None)
     if token is None:
         print """
@@ -441,6 +478,8 @@ def check_api_token():
 
 
 def initials(full_name):
+    """Return the initials of a passed in name"""
+
     if full_name is not None and len(full_name) > 0:
         return ''.join([s[0] for s in full_name.split(' ')]).upper()
     else:
@@ -455,6 +494,8 @@ def estimate_visual(estimate):
 
 
 def find_project_for_story(story_id, arguments):
+    """If we have multiple projects, will loop through the projects to find the one with the given story"""
+
     project = None
     if arguments['--project-index'] is not None:
         try:
@@ -518,6 +559,7 @@ def pretty_date():
 
 
 def clear():
+    """Clears the terminal buffer"""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
