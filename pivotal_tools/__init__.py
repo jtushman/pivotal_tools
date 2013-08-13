@@ -64,7 +64,7 @@ import requests
 TOKEN = os.getenv('PIVOTAL_TOKEN', None)
 
 
-def perform_pivotal_get(url):
+def _perform_pivotal_get(url):
     headers = {'X-TrackerToken': TOKEN}
     # print url
     response = requests.get(url, headers=headers)
@@ -72,7 +72,7 @@ def perform_pivotal_get(url):
     return response
 
 
-def perform_pivotal_put(url):
+def _perform_pivotal_put(url):
 
     headers = {'X-TrackerToken': TOKEN, 'Content-Length': 0}
     response = requests.put(url, headers=headers)
@@ -80,7 +80,7 @@ def perform_pivotal_put(url):
     return response
 
 
-def parse_text(node, key):
+def _parse_text(node, key):
     element = node.find(key)
     if element is not None:
         text = element.text
@@ -92,13 +92,12 @@ def parse_text(node, key):
         return ''
 
 
-def parse_int(node, key):
+def _parse_int(node, key):
     element = node.find(key)
     if element is not None:
         return int(element.text)
     else:
         return None
-
 
 
 class Note(object):
@@ -142,31 +141,31 @@ class Story(object):
     def from_node(cls, node):
 
         story = Story()
-        story.story_id = parse_text(node, 'id')
-        story.name = parse_text(node, 'name')
-        story.owned_by = parse_text(node, 'owned_by')
-        story.story_type = parse_text(node, 'story_type')
-        story.state = parse_text(node, 'current_state')
-        story.description = parse_text(node, 'description')
-        story.estimate = parse_int(node, 'estimate')
-        story.labels = parse_text(node, 'labels')
-        story.url = parse_text(node, 'url')
-        story.project_id = parse_text(node, 'project_id')
+        story.story_id = _parse_text(node, 'id')
+        story.name = _parse_text(node, 'name')
+        story.owned_by = _parse_text(node, 'owned_by')
+        story.story_type = _parse_text(node, 'story_type')
+        story.state = _parse_text(node, 'current_state')
+        story.description = _parse_text(node, 'description')
+        story.estimate = _parse_int(node, 'estimate')
+        story.labels = _parse_text(node, 'labels')
+        story.url = _parse_text(node, 'url')
+        story.project_id = _parse_text(node, 'project_id')
 
         note_nodes = node.find('notes')
         if note_nodes is not None:
             for note_node in note_nodes:
-                note_id = parse_text(note_node, 'id')
-                text = parse_text(note_node, 'text')
-                author = parse_text(note_node, 'author')
+                note_id = _parse_text(note_node, 'id')
+                text = _parse_text(note_node, 'text')
+                author = _parse_text(note_node, 'author')
                 story.notes.append(Note(note_id, text, author))
 
         attachment_nodes = node.find('attachments')
         if attachment_nodes is not None:
             for attachment_node in attachment_nodes:
-                attachment_id = parse_text(attachment_node, 'id')
-                description = parse_text(attachment_node, 'text')
-                url = parse_text(attachment_node, 'url')
+                attachment_id = _parse_text(attachment_node, 'id')
+                description = _parse_text(attachment_node, 'text')
+                url = _parse_text(attachment_node, 'url')
                 story.attachments.append(Attachment(attachment_id,description,url))
 
 
@@ -178,7 +177,7 @@ class Story(object):
 
     def assign_estimate(self, estimate):
         update_story_url ="http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}?story[estimate]={}".format(self.project_id, self.story_id, estimate)
-        response = perform_pivotal_put(update_story_url)
+        response = _perform_pivotal_put(update_story_url)
         print response.text
 
 
@@ -191,17 +190,17 @@ class Project(object):
     @classmethod
     def load_project(cls, project_id):
         url = "http://www.pivotaltracker.com/services/v3/projects/%s" % project_id
-        response = perform_pivotal_get(url)
+        response = _perform_pivotal_get(url)
 
         project_node = ET.fromstring(response.text)
-        name = parse_text(project_node, 'name')
+        name = _parse_text(project_node, 'name')
         return Project(project_id, name)
 
     def get_story_tree(self, filter_string):
         story_filter = quote(filter_string, safe='')
         stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
 
-        response = perform_pivotal_get(stories_url)
+        response = _perform_pivotal_get(stories_url)
         root = ET.fromstring(response.text)
         return root
 
@@ -275,7 +274,7 @@ def generate_changelog(project):
 
 def list_projects():
     projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
-    response = perform_pivotal_get(projects_url)
+    response = _perform_pivotal_get(projects_url)
     root = ET.fromstring(response.text)
 
     i = 0
@@ -288,7 +287,7 @@ def list_projects():
 
 def get_project_by_index(index):
     projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
-    response = perform_pivotal_get(projects_url)
+    response = _perform_pivotal_get(projects_url)
     root = ET.fromstring(response.text)
     project_id =  root[index].find('id').text
     return Project.load_project(project_id)
@@ -391,14 +390,14 @@ def find_project_for_story(story_id, arguments):
     else:
         # Loop thorugh your projects to try to find the project where the story is:
         projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
-        response = perform_pivotal_get(projects_url)
+        response = _perform_pivotal_get(projects_url)
         root = ET.fromstring(response.text)
         for project_node in root:
-            project_id = parse_text(project_node,'id')
+            project_id = _parse_text(project_node,'id')
 
             try:
                 story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project_id, story_id)
-                response = perform_pivotal_get(story_url)
+                response = _perform_pivotal_get(story_url)
             except requests.exceptions.HTTPError, e:
                 if e.code == 404:
                     continue
@@ -422,7 +421,7 @@ def browser_open(story_id, arguments):
 def show_story(story_id, arguments):
     project = find_project_for_story(story_id, arguments)
     story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project.project_id, story_id)
-    resposne = perform_pivotal_get(story_url)
+    resposne = _perform_pivotal_get(story_url)
     # print resposne.text
     root = ET.fromstring(resposne.text)
     story = Story.from_node(root)
