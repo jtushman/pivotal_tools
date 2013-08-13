@@ -25,7 +25,7 @@ usage
 
 A collection of tools to help with your pivotal workflow
 
-
+```
 changelog
 ---------------
 List out projects stories that are delivered or finished (not accepted)
@@ -66,3 +66,4 @@ Options:
   --for=<user_name>     Username, or initials
   --project-index=<pi>  If you have multiple projects, this is the index that the project shows up in my prompt
                         This is useful if you do not want to be prompted, and then you can pipe the output
+```
