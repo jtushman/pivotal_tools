@@ -196,33 +196,34 @@ class Project(object):
         name = _parse_text(project_node, 'name')
         return Project(project_id, name)
 
-    def get_story_tree(self, filter_string):
+    def get_stories(self, filter_string):
         story_filter = quote(filter_string, safe='')
         stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
 
         response = _perform_pivotal_get(stories_url)
-        root = ET.fromstring(response.text)
-        return root
+        stories_root = ET.fromstring(response.text)
 
+        return [Story.from_node(story_node) for story_node in stories_root]
 
     def unestimated_stories(self):
-        stories = []
-        search_string = 'type:feature state:unstarted'
-        stories_root = self.get_story_tree(search_string)
-
-        if stories_root is not None:
-            for story_node in stories_root:
-                story = Story.from_node(story_node)
-                if int(story.estimate) == -1:
-                    stories.append(story)
-
-        return stories
+        stories = self.get_stories('type:feature state:unstarted')
+        return [story for story in stories if int(story.estimate) == -1]
 
 
-def bold(string):
-    return colored(string, 'white', attrs=['bold'])
+    def in_progress_stories(self):
+        return self.get_stories('state:started,rejected')
+
+    def finished_features(self):
+        return self.get_stories('state:delivered,finished type:feature')
+
+    def finished_bugs(self):
+        return self.get_stories('state:delivered,finished type:bug')
+
+    def known_issues(self):
+        return self.get_stories('state:unscheduled,unstarted,started,rejected type:bug')
 
 
+## Main Methods
 def generate_changelog(project):
 
     title_string = 'Change Log {}'.format(project.name)
@@ -234,20 +235,19 @@ def generate_changelog(project):
 
     print bold('New Features')
     print bold('============')
-    feature_root = project.get_story_tree('state:delivered,finished type:feature')
-    features_by_tag = get_stories_by_label(feature_root)
 
-    for label in features_by_tag:
+    finished_features = project.finished_features()
+    features_by_label = group_stories_by_label(finished_features)
+
+    for label in features_by_label:
         print bold(label.title())
-        for story in features_by_tag[label]:
+        for story in features_by_label[label]:
             print '    * {:14s} {}'.format('[{}]'.format(story.story_id), story.name)
 
-    #print_stories_for_changelog(feature_root)
 
-    def print_stories_for_changelog(root):
-        if len(root) > 0:
-            for child in root:
-                story = Story.from_node(child)
+    def print_stories(stories):
+        if len(stories) > 0:
+            for story in stories:
                 story_string = ""
                 if story.labels is not None and len(story.labels) > 0:
                     story_string += "[{}] ".format(story.labels)
@@ -262,14 +262,120 @@ def generate_changelog(project):
     print
     print bold('Bugs Fixed')
     print bold('==========')
-    bug_root = project.get_story_tree('state:delivered,finished type:bug')
-    print_stories_for_changelog(bug_root)
+    print_stories(project.finished_bugs())
 
     print
     print bold('Known Issues')
     print bold('==========')
-    issues_root = project.get_story_tree('state:unscheduled,unstarted,started,rejected type:bug')
-    print_stories_for_changelog(issues_root)
+    print_stories(project.known_issues())
+
+
+def show_stories(project, arguments):
+    search_string = 'state:unscheduled,unstarted,rejected,started'
+    if arguments['--for'] is not None:
+        search_string += " owner:{}".format(arguments['--for'])
+
+    stories_root = project.get_stories(search_string)
+
+    number_of_stories = 20
+    if arguments['--number'] is not None:
+        number_of_stories = int(arguments['--number'])
+    else:
+        print
+        print "Showing the top 20 stories, if you want to show more, specify number with the --number option"
+        print
+
+
+    if len(stories_root) == 0:
+        print "None"
+    else:
+        for child in islice(stories_root, number_of_stories):
+            story = Story.from_node(child)
+            print '{:14s}{:4s}{:9s}{:13s}{:10s} {}'.format('#{}'.format(story.story_id),
+                                                           initials(story.owned_by),
+                                                           story.story_type,
+                                                           story.state,
+                                                           estimate_visual(story.estimate),
+                                                           story.name)
+
+
+def show_story(story_id, arguments):
+    project = find_project_for_story(story_id, arguments)
+    story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project.project_id, story_id)
+    resposne = _perform_pivotal_get(story_url)
+    # print resposne.text
+    root = ET.fromstring(resposne.text)
+    story = Story.from_node(root)
+
+    print
+    print colored('{:12s}{:4s}{:9s}{:10s} {}'.format('#{}'.format(story.story_id),
+                                                     initials(story.owned_by),
+                                                     story.story_type,
+                                                     estimate_visual(story.estimate),
+                                                     story.name), 'white', attrs=['bold'])
+    print
+    print colored("Story Url: ", 'white', attrs=['bold']) + colored(story.url, 'blue', attrs=['underline'])
+    print colored("Description: ", 'white', attrs=['bold']) + story.description
+
+    if len(story.notes) > 0:
+        print
+        print bold("Notes:")
+        for note in story.notes:
+            print "[{}] {}".format(initials(note.author), note.text)
+
+    if len(story.attachments) > 0:
+        print
+        print bold("Attachments:")
+        for attachment in story.attachments:
+            print "{} {}".format(attachment.description, colored(attachment.url,'blue',attrs=['underline']))
+
+    print
+
+
+def scrum(project):
+
+    stories = project.in_progress_stories()
+    stories_by_owner = group_stories_by_owner(stories)
+
+    print bold("{} SCRUM -- {}".format(project.name, pretty_date()))
+    print
+
+    for owner in stories_by_owner:
+        print bold(owner)
+        for story in stories_by_owner[owner]:
+            print "   #{:12s}{:9s} {:7s} {}".format(story.story_id,
+                                                    estimate_visual(story.estimate),
+                                                    story.story_type,
+                                                    story.name)
+
+        print
+
+
+def poker(project):
+
+    total_stories = len(project.unestimated_stories())
+    for idx, story in enumerate(project.unestimated_stories()):
+        clear()
+        rows, cols = _get_column_dimensions()
+        print "{} PLANNING POKER SESSION [{}]".format(project.name.upper(), bold("{}/{} Stories Estimated".format(idx+1, total_stories)))
+        print "-" * cols
+        pretty_print_story(story)
+        prompt_estimation(story)
+    else:
+        print "KaBoom!!! Nice Work Team"
+
+
+def browser_open(story_id, arguments):
+
+    project_id = find_project_for_story(story_id, arguments)
+    story_url = "https://www.pivotaltracker.com/s/projects/{}/stories/{}".format(project_id, story_id)
+    webbrowser.open(story_url)
+
+
+
+
+def bold(string):
+    return colored(string, 'white', attrs=['bold'])
 
 
 def list_projects():
@@ -289,7 +395,7 @@ def get_project_by_index(index):
     projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
     response = _perform_pivotal_get(projects_url)
     root = ET.fromstring(response.text)
-    project_id =  root[index].find('id').text
+    project_id = root[index].find('id').text
     return Project.load_project(project_id)
 
 
@@ -348,35 +454,6 @@ def estimate_visual(estimate):
         return '[        ]'
 
 
-def list_stories(project, arguments):
-    search_string = 'state:unscheduled,unstarted,rejected,started'
-    if arguments['--for'] is not None:
-        search_string += " owner:{}".format(arguments['--for'])
-
-    stories_root = project.get_story_tree(search_string)
-
-    number_of_stories = 20
-    if arguments['--number'] is not None:
-        number_of_stories = int(arguments['--number'])
-    else:
-        print
-        print "Showing the top 20 stories, if you want to show more, specify number with the --number option"
-        print
-
-
-    if len(stories_root) == 0:
-        print "None"
-    else:
-        for child in islice(stories_root, number_of_stories):
-            story = Story.from_node(child)
-            print '{:14s}{:4s}{:9s}{:13s}{:10s} {}'.format('#{}'.format(story.story_id),
-                                                       initials(story.owned_by),
-                                                       story.story_type,
-                                                       story.state,
-                                                       estimate_visual(story.estimate),
-                                                       story.name)
-
-
 def find_project_for_story(story_id, arguments):
     project = None
     if arguments['--project-index'] is not None:
@@ -411,82 +488,28 @@ def find_project_for_story(story_id, arguments):
             exit()
 
 
-def browser_open(story_id, arguments):
-
-    project_id = find_project_for_story(story_id, arguments)
-    story_url = "https://www.pivotaltracker.com/s/projects/{}/stories/{}".format(project_id, story_id)
-    webbrowser.open(story_url)
-
-
-def show_story(story_id, arguments):
-    project = find_project_for_story(story_id, arguments)
-    story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project.project_id, story_id)
-    resposne = _perform_pivotal_get(story_url)
-    # print resposne.text
-    root = ET.fromstring(resposne.text)
-    story = Story.from_node(root)
-
-    print
-    print colored('{:12s}{:4s}{:9s}{:10s} {}'.format('#{}'.format(story.story_id),
-                                                     initials(story.owned_by),
-                                                     story.story_type,
-                                                     estimate_visual(story.estimate),
-                                                     story.name), 'white', attrs=['bold'])
-    print
-    print colored("Story Url: ", 'white', attrs=['bold']) + colored(story.url, 'blue', attrs=['underline'])
-    print colored("Description: ", 'white', attrs=['bold']) + story.description
-
-
-    notes = root.find('notes')
-    if notes is not None:
-        print
-        print colored("Notes:",'white', attrs=['bold'])
-        for note in notes:
-            text = note.find('text').text
-            author = note.find('author').text
-            print "[{}] {}".format(initials(author), text)
-
-    attachments = root.find('attachments')
-    if attachments is not None:
-        print
-        print colored("Attachments:",'white', attrs=['bold'])
-        for attachment in attachments:
-            description = attachment.find('description').text
-            location = attachment.find('url').text
-            print "{} {}".format(description, colored(location,'blue',attrs=['underline']))
-
-    print
-
-
-# FIXME: Use our models, vs working with nodes
-def get_stories_by_owner(stories_root):
+def group_stories_by_owner(stories):
     stories_by_owner = {}
-    for story_node in stories_root:
-        story = Story.from_node(story_node)
-        owner_node = story_node.find('owned_by')
-        if owner_node is not None:
-            owner_full_name = owner_node.text
-            if owner_full_name in stories_by_owner:
-                stories_by_owner[owner_full_name].append(story)
+    for story in stories:
+        if story.owned_by is not None:
+            if story.owned_by in stories_by_owner:
+                stories_by_owner[story.owned_by].append(story)
             else:
-                stories_by_owner[owner_full_name] = [story]
+                stories_by_owner[story.owned_by] = [story]
         else:
             continue
     return stories_by_owner
 
 
-# FIXME: Use our models, vs working with nodes
-def get_stories_by_label(stories_root):
-    stories = {}
-    for story_node in stories_root:
-        story = Story.from_node(story_node)
-        label = story.first_label or 'Other'
-        if label in stories:
-            stories[label].append(story)
+def group_stories_by_label(stories):
+    stories_by_label = {}
+    for story in stories:
+        if story.first_label in stories_by_label:
+            stories_by_label[story.first_label].append(story)
         else:
-            stories[label] = [story]
+            stories_by_label[story.first_label] = [story]
 
-    return stories
+    return stories_by_label
 
 
 def pretty_date():
@@ -496,25 +519,6 @@ def pretty_date():
 
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
-
-
-def scrum(project):
-    search_string = 'state:started,rejected'
-    stories_root = project.get_story_tree(search_string)
-    stories_by_owner = get_stories_by_owner(stories_root)
-
-    print bold("{} SCRUM -- {}".format(project.name, pretty_date()))
-    print
-
-    for owner in stories_by_owner:
-        print bold(owner)
-        for story in stories_by_owner[owner]:
-            print "   #{:12s}{:9s} {:7s} {}".format(story.story_id,
-                                              estimate_visual(story.estimate),
-                                              story.story_type,
-                                              story.name)
-
-        print
 
 
 def pretty_print_story(story):
@@ -565,23 +569,10 @@ def prompt_estimation(story):
         prompt_estimation(story)
 
 
-def get_column_dimensions():
+def _get_column_dimensions():
     rows, cols = os.popen('stty size', 'r').read().split()
     return int(rows), int(cols)
 
-
-def poker(project):
-
-    total_stories = len(project.unestimated_stories())
-    for idx, story in enumerate(project.unestimated_stories()):
-        clear()
-        rows, cols = get_column_dimensions()
-        print "{} PLANNING POKER SESSION [{}]".format(project.name.upper(), bold("{}/{} Stories Estimated".format(idx+1, total_stories)))
-        print "-" * cols
-        pretty_print_story(story)
-        prompt_estimation(story)
-    else:
-        print "KaBoom!!! Nice Work Team"
 
 
 def main():
@@ -593,7 +584,7 @@ def main():
         generate_changelog(project)
     elif arguments['show_stories']:
         project = prompt_project(arguments)
-        list_stories(project, arguments)
+        show_stories(project, arguments)
     elif arguments['show_story']:
         show_story(arguments['<story_id>'], arguments)
     elif arguments['browser_open']:
