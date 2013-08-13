@@ -9,7 +9,8 @@ setup(name='pivotal_tools',
       license='MIT',
       packages=['pivotal_tools'],
       install_requires=[
-          'docopt>=0.6',
+          'requests'
+          'docopt>=0.7',
           'termcolor'
       ],
       entry_points={

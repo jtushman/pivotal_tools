@@ -39,6 +39,7 @@ show_stories
 ---------------
 Lists all stories for a given project (will prompt you if not specified)
 Can filter by user with the `for` option
+By default show the top 20 stories, can specify more (or less) with the number option
 
 show_story
 ---------------
@@ -52,14 +53,19 @@ scrum
 ---------------
 Will list stories and bugs that team members are working on.  Grouped by team member
 
+poker
+---------------
+Help to facilitate a planning poker session
+
 
 Usage:
   pivotal_tools generate_readme [--project-index=<pi>]
   pivotal_tools generate_changelog [--project-index=<pi>]
-  pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>]
+  pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
   pivotal_tools show_story <story_id> [--project-index=<pi>]
   pivotal_tools browser_open <story_id> [--project-index=<pi>]
   pivotal_tools scrum [--project-index=<pi>]
+  pivotal_tools poker [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
