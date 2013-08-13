@@ -6,13 +6,13 @@ A collection of tools to help with your pivotal workflow
 
 changelog
 ---------------
-List out projects stories that are delivered or finished (not accepted), titles only
+List out projects stories that are delivered or finished (not accepted)
 
 show_stories
 ---------------
 Lists all stories for a given project (will prompt you if not specified)
 Can filter by user with the `for` option
-By default show the top 20 stories, can specify more (or less) with the number option
+By default show the top 20 stories, can specify more (or less) with the _number_ option
 
 show_story
 ---------------

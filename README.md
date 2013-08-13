@@ -23,23 +23,18 @@ I put mine in ~/.zshenv, like so ...
 usage
 -----
 
-```bash
 A collection of tools to help with your pivotal workflow
 
-generate_readme
----------------
-List out projects stories that are delivered or finished (not accepted), including description
 
-
-generate_changelog
+changelog
 ---------------
-List out projects stories that are delivered or finished (not accepted), titles only
+List out projects stories that are delivered or finished (not accepted)
 
 show_stories
 ---------------
 Lists all stories for a given project (will prompt you if not specified)
 Can filter by user with the `for` option
-By default show the top 20 stories, can specify more (or less) with the number option
+By default show the top 20 stories, can specify more (or less) with the _number_ option
 
 show_story
 ---------------
@@ -59,8 +54,7 @@ Help to facilitate a planning poker session
 
 
 Usage:
-  pivotal_tools generate_readme [--project-index=<pi>]
-  pivotal_tools generate_changelog [--project-index=<pi>]
+  pivotal_tools changelog [--project-index=<pi>]
   pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
   pivotal_tools show_story <story_id> [--project-index=<pi>]
   pivotal_tools browser_open <story_id> [--project-index=<pi>]
@@ -72,4 +66,3 @@ Options:
   --for=<user_name>     Username, or initials
   --project-index=<pi>  If you have multiple projects, this is the index that the project shows up in my prompt
                         This is useful if you do not want to be prompted, and then you can pipe the output
-```
