@@ -61,6 +61,9 @@ from pivotal import Project, Story
 
 
 ## Main Methods
+
+
+
 def generate_changelog(project):
     """Generate a Changelog for the current project.  It is grouped into 3 sections:
     * New Features
@@ -245,6 +248,12 @@ def browser_open(story_id, arguments):
     story = load_story(story_id, arguments)
 
     webbrowser.open(story.url)
+
+
+
+## Helper Methods
+
+
 
 def bold(string):
     return colored(string, 'white', attrs=['bold'])

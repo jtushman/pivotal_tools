@@ -1,6 +1,5 @@
 # Core Imports
 import os
-import urllib2
 from urllib import quote
 import xml.etree.ElementTree as ET
 
@@ -8,41 +7,6 @@ import xml.etree.ElementTree as ET
 import requests
 
 TOKEN = os.getenv('PIVOTAL_TOKEN', None)
-
-def _perform_pivotal_get(url):
-    headers = {'X-TrackerToken': TOKEN}
-    # print url
-    response = requests.get(url, headers=headers)
-    return response
-
-
-def _perform_pivotal_put(url):
-    headers = {'X-TrackerToken': TOKEN, 'Content-Length': 0}
-    response = requests.put(url, headers=headers)
-    response.raise_for_status()
-    return response
-
-
-def _parse_text(node, key):
-    """parses test from an ElementTree node, if not found returns empty string"""
-    element = node.find(key)
-    if element is not None:
-        text = element.text
-        if text is not None:
-            return text.strip()
-        else:
-            return ''
-    else:
-        return ''
-
-
-def _parse_int(node, key):
-    """parses an int from an ElementTree node, if not found returns None"""
-    element = node.find(key)
-    if element is not None:
-        return int(element.text)
-    else:
-        return None
 
 
 def find_project_for_story(story_id):
@@ -58,7 +22,6 @@ def find_project_for_story(story_id):
     #Not found
     print "No project found for story: #{}".format(story_id)
     return None
-
 
 
 def get_project_by_index(index):
@@ -232,3 +195,39 @@ class Project(object):
 
     def known_issues(self):
         return self.get_stories('state:unscheduled,unstarted,started,rejected type:bug')
+
+
+def _perform_pivotal_get(url):
+    headers = {'X-TrackerToken': TOKEN}
+    # print url
+    response = requests.get(url, headers=headers)
+    return response
+
+
+def _perform_pivotal_put(url):
+    headers = {'X-TrackerToken': TOKEN, 'Content-Length': 0}
+    response = requests.put(url, headers=headers)
+    response.raise_for_status()
+    return response
+
+
+def _parse_text(node, key):
+    """parses test from an ElementTree node, if not found returns empty string"""
+    element = node.find(key)
+    if element is not None:
+        text = element.text
+        if text is not None:
+            return text.strip()
+        else:
+            return ''
+    else:
+        return ''
+
+
+def _parse_int(node, key):
+    """parses an int from an ElementTree node, if not found returns None"""
+    element = node.find(key)
+    if element is not None:
+        return int(element.text)
+    else:
+        return None
