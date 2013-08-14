@@ -1,0 +1,245 @@
+# Core Imports
+import os
+import urllib2
+from urllib import quote
+import xml.etree.ElementTree as ET
+
+# 3rd Party Imports
+import requests
+
+TOKEN = os.getenv('PIVOTAL_TOKEN', None)
+
+def _perform_pivotal_get(url):
+    headers = {'X-TrackerToken': TOKEN}
+    # print url
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response
+
+
+def _perform_pivotal_put(url):
+    headers = {'X-TrackerToken': TOKEN, 'Content-Length': 0}
+    response = requests.put(url, headers=headers)
+    response.raise_for_status()
+    return response
+
+
+def _parse_text(node, key):
+    """parses test from an ElementTree node, if not found returns empty string"""
+    element = node.find(key)
+    if element is not None:
+        text = element.text
+        if text is not None:
+            return text.strip()
+        else:
+            return ''
+    else:
+        return ''
+
+
+def _parse_int(node, key):
+    """parses an int from an ElementTree node, if not found returns None"""
+    element = node.find(key)
+    if element is not None:
+        return int(element.text)
+    else:
+        return None
+
+
+#TODO Factor out arguments
+def load_story(story_id, arguments):
+    project = find_project_for_story(story_id, arguments)
+    story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project.project_id, story_id)
+    resposne = _perform_pivotal_get(story_url)
+    # print resposne.text
+    root = ET.fromstring(resposne.text)
+    story = Story.from_node(root)
+
+
+#TODO Factor out arguments
+def find_project_for_story(story_id, arguments):
+    """If we have multiple projects, will loop through the projects to find the one with the given story"""
+
+    project = None
+    if arguments['--project-index'] is not None:
+        try:
+            project = get_project_by_index(int(arguments['--project-index']) - 1)
+        except:
+            pass
+
+    if project is not None:
+        return project
+    else:
+        # Loop thorugh your projects to try to find the project where the story is:
+        projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
+        response = _perform_pivotal_get(projects_url)
+        root = ET.fromstring(response.text)
+        for project_node in root:
+            project_id = _parse_text(project_node,'id')
+
+            try:
+                story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project_id, story_id)
+                response = _perform_pivotal_get(story_url)
+            except requests.exceptions.HTTPError, e:
+                if e.code == 404:
+                    continue
+                else:
+                    raise e
+
+            if response is not None:
+                return Project.load_project(project_id)
+        else:
+            print "Could not find story"
+            exit()
+
+
+def get_project_by_index(index):
+    projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
+    response = _perform_pivotal_get(projects_url)
+    root = ET.fromstring(response.text)
+    project_id = root[index].find('id').text
+    return Project.load_project(project_id)
+
+
+
+class Note(object):
+    """object representation of a Pivotal Note, should be accessed from story.notes"""
+    def __init__(self, note_id, text, author):
+        self.note_id = note_id
+        self.text = text
+        self.author = author
+
+
+class Attachment(object):
+    """object representation of a Pivotal attachment, should be accessed from story.attachments"""
+    def __init__(self, attachment_id, description, url):
+        self.attachment_id = attachment_id
+        self.description = description
+        self.url = url
+
+
+class Story(object):
+    """object representation of a Pivotal story"""
+    def __init__(self):
+        self.story_id = None
+        self.project_id = None
+        self.name = None
+        self.description = None
+        self.owned_by = None
+        self.story_type = None
+        self.estimate = None
+        self.state = None
+        self.url = None
+        self.labels = None
+        self.notes = []
+        self.attachments = []
+
+
+    @property
+    def first_label(self):
+        """returns the first label if any from labels.  Used for grouping"""
+        return self.labels.split(',')[0]
+
+    @classmethod
+    def from_node(cls, node):
+        """instantiates a Story object from an elementTree node, build child notes and attachment lists"""
+
+        story = Story()
+        story.story_id = _parse_text(node, 'id')
+        story.name = _parse_text(node, 'name')
+        story.owned_by = _parse_text(node, 'owned_by')
+        story.story_type = _parse_text(node, 'story_type')
+        story.state = _parse_text(node, 'current_state')
+        story.description = _parse_text(node, 'description')
+        story.estimate = _parse_int(node, 'estimate')
+        story.labels = _parse_text(node, 'labels')
+        story.url = _parse_text(node, 'url')
+        story.project_id = _parse_text(node, 'project_id')
+
+        note_nodes = node.find('notes')
+        if note_nodes is not None:
+            for note_node in note_nodes:
+                note_id = _parse_text(note_node, 'id')
+                text = _parse_text(note_node, 'text')
+                author = _parse_text(note_node, 'author')
+                story.notes.append(Note(note_id, text, author))
+
+        attachment_nodes = node.find('attachments')
+        if attachment_nodes is not None:
+            for attachment_node in attachment_nodes:
+                attachment_id = _parse_text(attachment_node, 'id')
+                description = _parse_text(attachment_node, 'text')
+                url = _parse_text(attachment_node, 'url')
+                story.attachments.append(Attachment(attachment_id,description,url))
+
+
+
+        return story
+
+    def assign_estimate(self, estimate):
+        """changes the estimate of a story"""
+        update_story_url ="http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}?story[estimate]={}".format(self.project_id, self.story_id, estimate)
+        response = _perform_pivotal_put(update_story_url)
+        print response.text
+
+
+class Project(object):
+    """object representation of a Pivotal Project"""
+
+    def __init__(self, project_id, name):
+        self.project_id = project_id
+        self.name = name
+
+    @classmethod
+    def from_node(cls, project_node):
+        name = _parse_text(project_node, 'name')
+        id = _parse_text(project_node, 'id')
+        return Project(id,name)
+
+    @classmethod
+    def all(cls):
+        """returns all projects for the given user"""
+        projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
+        response = _perform_pivotal_get(projects_url)
+        root = ET.fromstring(response.text)
+        if root is not None:
+            return [Project.from_node(project_node) for project_node in root]
+
+    @classmethod
+    def load_project(cls, project_id):
+        url = "http://www.pivotaltracker.com/services/v3/projects/%s" % project_id
+        response = _perform_pivotal_get(url)
+
+        project_node = ET.fromstring(response.text)
+        name = _parse_text(project_node, 'name')
+        return Project(project_id, name)
+
+    def get_stories(self, filter_string):
+        """Given a filter strong, returns an list of stories matching that filter.  If none will return an empty list
+        Look at [link](https://www.pivotaltracker.com/help/faq#howcanasearchberefined) for syntax
+
+        """
+
+        story_filter = quote(filter_string, safe='')
+        stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
+
+        response = _perform_pivotal_get(stories_url)
+        stories_root = ET.fromstring(response.text)
+
+        return [Story.from_node(story_node) for story_node in stories_root]
+
+    def unestimated_stories(self):
+        stories = self.get_stories('type:feature state:unstarted')
+        return [story for story in stories if int(story.estimate) == -1]
+
+    def in_progress_stories(self):
+        return self.get_stories('state:started,rejected')
+
+    def finished_features(self):
+        return self.get_stories('state:delivered,finished type:feature')
+
+    def finished_bugs(self):
+        return self.get_stories('state:delivered,finished type:bug')
+
+    def known_issues(self):
+        return self.get_stories('state:unscheduled,unstarted,started,rejected type:bug')
