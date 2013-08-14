@@ -13,7 +13,6 @@ def _perform_pivotal_get(url):
     headers = {'X-TrackerToken': TOKEN}
     # print url
     response = requests.get(url, headers=headers)
-    response.raise_for_status()
     return response
 
 
@@ -46,60 +45,24 @@ def _parse_int(node, key):
         return None
 
 
-#TODO Factor out arguments
-def load_story(story_id, arguments):
-    project = find_project_for_story(story_id, arguments)
-    story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project.project_id, story_id)
-    resposne = _perform_pivotal_get(story_url)
-    # print resposne.text
-    root = ET.fromstring(resposne.text)
-    story = Story.from_node(root)
+def find_project_for_story(story_id):
+    """If we have multiple projects, will loop through the projects to find the one with the given story.
+    returns None if not found
+    """
 
+    for project in Project.all():
+        story = project.load_story(story_id)
+        if story is not None:
+            return project
 
-#TODO Factor out arguments
-def find_project_for_story(story_id, arguments):
-    """If we have multiple projects, will loop through the projects to find the one with the given story"""
+    #Not found
+    print "No project found for story: #{}".format(story_id)
+    return None
 
-    project = None
-    if arguments['--project-index'] is not None:
-        try:
-            project = get_project_by_index(int(arguments['--project-index']) - 1)
-        except:
-            pass
-
-    if project is not None:
-        return project
-    else:
-        # Loop thorugh your projects to try to find the project where the story is:
-        projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
-        response = _perform_pivotal_get(projects_url)
-        root = ET.fromstring(response.text)
-        for project_node in root:
-            project_id = _parse_text(project_node,'id')
-
-            try:
-                story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(project_id, story_id)
-                response = _perform_pivotal_get(story_url)
-            except requests.exceptions.HTTPError, e:
-                if e.code == 404:
-                    continue
-                else:
-                    raise e
-
-            if response is not None:
-                return Project.load_project(project_id)
-        else:
-            print "Could not find story"
-            exit()
 
 
 def get_project_by_index(index):
-    projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
-    response = _perform_pivotal_get(projects_url)
-    root = ET.fromstring(response.text)
-    project_id = root[index].find('id').text
-    return Project.load_project(project_id)
-
+    return Project.all()[index]
 
 
 class Note(object):
@@ -139,6 +102,19 @@ class Story(object):
     def first_label(self):
         """returns the first label if any from labels.  Used for grouping"""
         return self.labels.split(',')[0]
+
+
+    @classmethod
+    def find(cls, story_id, project_index=None):
+        project = None
+        if project_index is None:
+            project = find_project_for_story(story_id)
+        else:
+            project = Project.all()[project_index]
+
+        return project.load_story(story_id)
+
+
 
     @classmethod
     def from_node(cls, node):
@@ -227,6 +203,19 @@ class Project(object):
         stories_root = ET.fromstring(response.text)
 
         return [Story.from_node(story_node) for story_node in stories_root]
+
+    def load_story(self, story_id):
+        """Trys to find a story, returns None is not found"""
+        story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(self.project_id, story_id)
+
+        resposne = _perform_pivotal_get(story_url)
+        if resposne.status_code == 404:
+            # Not Found
+            return None
+        else:
+            #Found, parsing story
+            root = ET.fromstring(resposne.text)
+            return Story.from_node(root)
 
     def unestimated_stories(self):
         stories = self.get_stories('type:feature state:unstarted')
