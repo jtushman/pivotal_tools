@@ -1,7 +1,7 @@
 pivotal_tools
 =============
 
-Set of helper tools to rock your pivotal process.  On the Command Line of course
+Geeky command-line interface with additional scrum, planning poker, and changelog generation features
 
 [Blog post on its usage](http://jtushman.github.io/blog/2013/08/15/introducing-pivotal-tools/)
 
