@@ -1,13 +1,14 @@
 from setuptools import setup
 
 setup(name='pivotal_tools',
-      version='0.6',
+      version='0.7',
       description='Collection of pivotal command line tools',
       url='http://github.com/jtushman/pivotal_readme',
       author='Jonathan Tushman',
       author_email='jonathan.tushman@zefr.com',
       license='MIT',
-      packages=['pivotal_tools'],
+      packages=['pivotal_to'
+                'ols'],
       install_requires=[
           'requests',
           'docopt',

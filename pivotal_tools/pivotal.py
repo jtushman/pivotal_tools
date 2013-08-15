@@ -125,21 +125,24 @@ class Story(object):
 class Project(object):
     """object representation of a Pivotal Project"""
 
-    def __init__(self, project_id, name):
+    def __init__(self, project_id, name, point_scale):
         self.project_id = project_id
         self.name = name
+        self.point_scale = point_scale
 
     @classmethod
     def from_node(cls, project_node):
         name = _parse_text(project_node, 'name')
         id = _parse_text(project_node, 'id')
-        return Project(id,name)
+        point_scale = _parse_array(project_node, 'point_scale')
+        return Project(id, name, point_scale)
 
     @classmethod
     def all(cls):
         """returns all projects for the given user"""
         projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
         response = _perform_pivotal_get(projects_url)
+        #print response.text
         root = ET.fromstring(response.text)
         if root is not None:
             return [Project.from_node(project_node) for project_node in root]
@@ -229,5 +232,14 @@ def _parse_int(node, key):
     element = node.find(key)
     if element is not None:
         return int(element.text)
+    else:
+        return None
+
+
+def _parse_array(node, key):
+    """parses an int from an ElementTree node, if not found returns None"""
+    element = node.find(key)
+    if element is not None:
+        return element.text.split(',')
     else:
         return None

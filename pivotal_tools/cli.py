@@ -26,7 +26,7 @@ scrum
 ---------------
 Will list stories and bugs that team members are working on.  Grouped by team member
 
-poker
+poker (aka planning)
 ---------------
 Help to facilitate a planning poker session
 
@@ -38,6 +38,7 @@ Usage:
   pivotal_tools browser_open <story_id> [--project-index=<pi>]
   pivotal_tools scrum [--project-index=<pi>]
   pivotal_tools poker [--project-index=<pi>]
+  pivotal_tools planning [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
@@ -226,7 +227,7 @@ def poker(project):
         print "{} PLANNING POKER SESSION [{}]".format(project.name.upper(), bold("{}/{} Stories Estimated".format(idx+1, total_stories)))
         print "-" * cols
         pretty_print_story(story)
-        prompt_estimation(story)
+        prompt_estimation(project, story)
     else:
         print "KaBoom!!! Nice Work Team"
 
@@ -261,16 +262,16 @@ def bold(string):
 
 def prompt_project(arguments):
     """prompts the user for a project, if not passed in as a argument"""
+    projects = Project.all()
 
-    def list_projects():
-        for idx, project in enumerate(Project.all()):
-            print "[{}] {}".format(idx+1, project.name)
-
+    # Do not prompt -- and auto select the one project if a account only has one project
+    if len(projects) == 1:
+        return projects[0]
 
     if arguments['--project-index'] is not None:
         try:
             idx = int(arguments['--project-index']) - 1
-            project = Project.all()[idx]
+            project = projects[idx]
             return project
         except:
             print 'Yikes, that did not work -- try again?'
@@ -278,11 +279,12 @@ def prompt_project(arguments):
 
     while True:
         print "Select a Project:"
-        list_projects()
+        for idx, project in enumerate(projects):
+            print "[{}] {}".format(idx+1, project.name)
         s = raw_input('>> ')
 
         try:
-            project = Project.all()[int(s) - 1]
+            project = projects[int(s) - 1]
         except:
             print 'Hmmm, that did not work -- try again?'
             continue
@@ -386,9 +388,9 @@ def pretty_print_story(story):
         print "{} {}".format(bold('Labels:'), story.labels)
 
 
-def prompt_estimation(story):
+def prompt_estimation(project, story):
     print
-    print bold("Estimate: [0,1,2,3,5,8, (s)kip, (o)pen, (q)uit]")
+    print bold("Estimate: [{}, (s)kip, (o)pen, (q)uit]".format(','.join(project.point_scale)))
     input_value = raw_input(bold('>> '))
 
     if input_value in ['s', 'S']:
@@ -399,12 +401,12 @@ def prompt_estimation(story):
         prompt_estimation(story)
     elif input_value in ['q','Q']:
         exit()
-    elif input_value in ['0','1','2','3','5','8']:
+    elif input_value in project.point_scale:
         value = int(input_value)
         story.assign_estimate(value)
     else:
         print "Invalid Input, Try again"
-        prompt_estimation(story)
+        prompt_estimation(project, story)
 
 
 def _get_column_dimensions():
@@ -430,7 +432,7 @@ def main():
     elif arguments['scrum']:
         project = prompt_project(arguments)
         scrum(project)
-    elif arguments['poker']:
+    elif arguments['poker'] or arguments['planning']:
         project = prompt_project(arguments)
         poker(project)
     else:
