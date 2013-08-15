@@ -8,7 +8,7 @@ install
 -------
 
 ```bash
-pip install git+ssh://git@github.com/jtushman/pivotal_tools.git
+pip install pivotal_tools
 ```
 
 
@@ -48,7 +48,7 @@ scrum
 ---------------
 Will list stories and bugs that team members are working on.  Grouped by team member
 
-poker
+poker || planning
 ---------------
 Help to facilitate a planning poker session
 
@@ -60,6 +60,7 @@ Usage:
   pivotal_tools browser_open <story_id> [--project-index=<pi>]
   pivotal_tools scrum [--project-index=<pi>]
   pivotal_tools poker [--project-index=<pi>]
+  pivotal_tools planning [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.

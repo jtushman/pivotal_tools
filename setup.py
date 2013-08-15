@@ -7,8 +7,7 @@ setup(name='pivotal_tools',
       author='Jonathan Tushman',
       author_email='jonathan.tushman@zefr.com',
       license='MIT',
-      packages=['pivotal_to'
-                'ols'],
+      packages=['pivotal_tools'],
       install_requires=[
           'requests',
           'docopt',
