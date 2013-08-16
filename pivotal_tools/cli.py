@@ -420,7 +420,7 @@ def prompt_estimation(project, story):
         return
     elif input_value in ['o', 'O']:
         webbrowser.open(story.url)
-        prompt_estimation(story)
+        prompt_estimation(project, story)
     elif input_value in ['q','Q']:
         exit()
     elif input_value in project.point_scale:
