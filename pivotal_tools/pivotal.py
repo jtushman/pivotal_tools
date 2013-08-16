@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 
 # 3rd Party Imports
 import requests
+import dicttoxml
 
 TOKEN = os.getenv('PIVOTAL_TOKEN', None)
 
@@ -183,6 +184,11 @@ class Project(object):
             root = ET.fromstring(resposne.text)
             return Story.from_node(root)
 
+    def create_story(self,story_dict):
+        stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories".format(self.project_id)
+        story_xml = dicttoxml.dicttoxml(story_dict, root=False)
+        _perform_pivotal_post(stories_url, story_xml)
+
     def unestimated_stories(self):
         stories = self.get_stories('type:feature state:unstarted')
         return [story for story in stories if int(story.estimate) == -1]
@@ -210,6 +216,12 @@ def _perform_pivotal_get(url):
 def _perform_pivotal_put(url):
     headers = {'X-TrackerToken': TOKEN, 'Content-Length': 0}
     response = requests.put(url, headers=headers)
+    response.raise_for_status()
+    return response
+
+def _perform_pivotal_post(url,payload_xml):
+    headers = {'X-TrackerToken': TOKEN, 'Content-type': "application/xml"}
+    response = requests.post(url, data=payload_xml, headers=headers)
     response.raise_for_status()
     return response
 

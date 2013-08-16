@@ -30,6 +30,10 @@ poker (aka planning)
 ---------------
 Help to facilitate a planning poker session
 
+create (feature|bug|chore)
+---------------
+Create a story
+
 
 Usage:
   pivotal_tools changelog [--project-index=<pi>]
@@ -39,6 +43,7 @@ Usage:
   pivotal_tools scrum [--project-index=<pi>]
   pivotal_tools poker [--project-index=<pi>]
   pivotal_tools planning [--project-index=<pi>]
+  pivotal_tools create (feature|bug|chore) <title> [<description>] [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
@@ -250,6 +255,23 @@ def browser_open(story_id, arguments):
 
     webbrowser.open(story.url)
 
+def create_story(project, arguments):
+
+    story = dict()
+    story['name'] = arguments['<title>']
+    if '<description>' in arguments:
+        story['description'] = arguments['<description>']
+
+    if arguments['bug']:
+        story['story_type'] = 'bug'
+    elif arguments['feature']:
+        story['story_type'] = 'feature'
+    elif arguments['chore']:
+        story['story_type'] = 'chore'
+
+    stories = {'story': story}
+
+    project.create_story(stories)
 
 
 ## Helper Methods
@@ -398,7 +420,7 @@ def prompt_estimation(project, story):
         return
     elif input_value in ['o', 'O']:
         webbrowser.open(story.url)
-        prompt_estimation(story)
+        prompt_estimation(project, story)
     elif input_value in ['q','Q']:
         exit()
     elif input_value in project.point_scale:
@@ -435,6 +457,9 @@ def main():
     elif arguments['poker'] or arguments['planning']:
         project = prompt_project(arguments)
         poker(project)
+    elif arguments['create']:
+        project = prompt_project(arguments)
+        create_story(project,arguments)
     else:
         print arguments
 

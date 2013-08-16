@@ -1,9 +1,9 @@
 from setuptools import setup
 
 setup(name='pivotal_tools',
-      version='0.8',
+      version='0.9',
       description='Collection of pivotal command line tools',
-      url='http://github.com/jtushman/pivotal_readme',
+      url='http://github.com/jtushman/pivotal_tools',
       author='Jonathan Tushman',
       author_email='jonathan.tushman@zefr.com',
       license='MIT',
@@ -11,7 +11,8 @@ setup(name='pivotal_tools',
       install_requires=[
           'requests',
           'docopt',
-          'termcolor'
+          'termcolor',
+          'dicttoxml'
       ],
       entry_points={
           'console_scripts': ['pivotal_tools = pivotal_tools:main']
