@@ -48,9 +48,13 @@ scrum
 ---------------
 Will list stories and bugs that team members are working on.  Grouped by team member
 
-poker || planning
+poker (aka planning)
 ---------------
 Help to facilitate a planning poker session
+
+create (feature|bug|chore)
+---------------
+Create a story
 
 
 Usage:
@@ -61,10 +65,12 @@ Usage:
   pivotal_tools scrum [--project-index=<pi>]
   pivotal_tools poker [--project-index=<pi>]
   pivotal_tools planning [--project-index=<pi>]
+  pivotal_tools create (feature|bug|chore) <title> [<description>] [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
   --for=<user_name>     Username, or initials
   --project-index=<pi>  If you have multiple projects, this is the index that the project shows up in my prompt
                         This is useful if you do not want to be prompted, and then you can pipe the output
+
 ```
