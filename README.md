@@ -22,6 +22,8 @@ I put mine in ~/.zshenv, like so ...
 
 `export PIVOTAL_TOKEN='your token'`
 
+Also make sure in your pivotal project settings that you have "Allow API Access" checked (which is currently the default behavior)
+
 usage
 -----
 
