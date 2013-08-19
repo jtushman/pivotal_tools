@@ -44,6 +44,7 @@ Usage:
   pivotal_tools poker [--project-index=<pi>]
   pivotal_tools planning [--project-index=<pi>]
   pivotal_tools create (feature|bug|chore) <title> [<description>] [--project-index=<pi>]
+  pivotal_tools (start|finish|deliver|accept|reject) story <story_id> [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
@@ -63,7 +64,7 @@ from itertools import islice
 from docopt import docopt
 from termcolor import colored
 
-from pivotal import Project, Story
+from pivotal import Project, Story, InvalidStateException
 
 
 ## Main Methods
@@ -274,6 +275,39 @@ def create_story(project, arguments):
     project.create_story(stories)
 
 
+def update_status(arguments):
+
+    story = None
+    if '<story_id>' in arguments:
+        story_id = arguments['<story_id>']
+        story = load_story(story_id, arguments)
+
+    if story is not None:
+        try:
+
+            if arguments['start']:
+                story.start()
+                print "Story: [{}] {} is STARTED".format(story.story_id, story.name)
+            elif arguments['finish']:
+                story.finish()
+                print "Story: [{}] {} is FINISHED".format(story.story_id, story.name)
+            elif arguments['deliver']:
+                story.deliver()
+                print "Story: [{}] {} is DELIVERED".format(story.story_id, story.name)
+            elif arguments['accept']:
+                story.accept()
+                print "Story: [{}] {} is ACCEPTED".format(story.story_id, story.name)
+            elif arguments['reject']:
+                story.reject()
+                print "Story: [{}] {} is REJECTED".format(story.story_id, story.name)
+
+        except InvalidStateException, e:
+            print e.message
+    else:
+        print "hmmm could not find story"
+
+
+
 ## Helper Methods
 
 
@@ -436,11 +470,13 @@ def _get_column_dimensions():
     return int(rows), int(cols)
 
 
-
 def main():
     clear()
-    check_api_token()
+
     arguments = docopt(__doc__)
+
+    check_api_token()
+
     if arguments['changelog']:
         project = prompt_project(arguments)
         generate_changelog(project)
@@ -459,7 +495,9 @@ def main():
         poker(project)
     elif arguments['create']:
         project = prompt_project(arguments)
-        create_story(project,arguments)
+        create_story(project, arguments)
+    elif arguments['story']:
+        update_status(arguments)
     else:
         print arguments
 

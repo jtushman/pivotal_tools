@@ -27,7 +27,7 @@ usage
 
 A collection of tools to help with your pivotal workflow
 
-```
+
 changelog
 ---------------
 List out projects stories that are delivered or finished (not accepted)
@@ -58,6 +58,12 @@ create (feature|bug|chore)
 ---------------
 Create a story
 
+(start|finish|deliver|accept|reject) story
+------------------------------------------
+Change the state of a story
+
+
+
 
 Usage:
   pivotal_tools changelog [--project-index=<pi>]
@@ -68,6 +74,7 @@ Usage:
   pivotal_tools poker [--project-index=<pi>]
   pivotal_tools planning [--project-index=<pi>]
   pivotal_tools create (feature|bug|chore) <title> [<description>] [--project-index=<pi>]
+  pivotal_tools (start|finish|deliver|accept|reject) story <story_id> [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
