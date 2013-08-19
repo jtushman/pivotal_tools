@@ -122,13 +122,13 @@ class Story(object):
 
     def assign_estimate(self, estimate):
         """changes the estimate of a story"""
-        update_story_url ="http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}?story[estimate]={}".format(self.project_id, self.story_id, estimate)
+        update_story_url ="https://www.pivotaltracker.com/services/v3/projects/{}/stories/{}?story[estimate]={}".format(self.project_id, self.story_id, estimate)
         response = _perform_pivotal_put(update_story_url)
         print response.text
 
     def set_state(self, state):
         """changes the estimate of a story"""
-        update_story_url ="http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}?story[current_state]={}".format(self.project_id, self.story_id, state)
+        update_story_url ="https://www.pivotaltracker.com/services/v3/projects/{}/stories/{}?story[current_state]={}".format(self.project_id, self.story_id, state)
         response = _perform_pivotal_put(update_story_url)
         return response
 
@@ -174,7 +174,7 @@ class Project(object):
     @classmethod
     def all(cls):
         """returns all projects for the given user"""
-        projects_url = 'http://www.pivotaltracker.com/services/v3/projects'
+        projects_url = 'https://www.pivotaltracker.com/services/v3/projects'
         response = _perform_pivotal_get(projects_url)
         #print response.text
         root = ET.fromstring(response.text)
@@ -183,7 +183,7 @@ class Project(object):
 
     @classmethod
     def load_project(cls, project_id):
-        url = "http://www.pivotaltracker.com/services/v3/projects/%s" % project_id
+        url = "https://www.pivotaltracker.com/services/v3/projects/%s" % project_id
         response = _perform_pivotal_get(url)
 
         project_node = ET.fromstring(response.text)
@@ -197,7 +197,7 @@ class Project(object):
         """
 
         story_filter = quote(filter_string, safe='')
-        stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
+        stories_url = "https://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
 
         response = _perform_pivotal_get(stories_url)
         stories_root = ET.fromstring(response.text)
@@ -206,7 +206,7 @@ class Project(object):
 
     def load_story(self, story_id):
         """Trys to find a story, returns None is not found"""
-        story_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(self.project_id, story_id)
+        story_url = "https://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(self.project_id, story_id)
 
         resposne = _perform_pivotal_get(story_url)
         if resposne.status_code == 404:
@@ -218,7 +218,7 @@ class Project(object):
             return Story.from_node(root)
 
     def create_story(self,story_dict):
-        stories_url = "http://www.pivotaltracker.com/services/v3/projects/{}/stories".format(self.project_id)
+        stories_url = "https://www.pivotaltracker.com/services/v3/projects/{}/stories".format(self.project_id)
         story_xml = dicttoxml.dicttoxml(story_dict, root=False)
         _perform_pivotal_post(stories_url, story_xml)
 
