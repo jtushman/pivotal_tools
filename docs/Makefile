@@ -21,6 +21,3 @@ livehtml: html
 
 browsehtml: html
 	livereload -b $(BUILDDIR)/html -p 33233
-
-gh-pages:
-	ghp-import _build/html
