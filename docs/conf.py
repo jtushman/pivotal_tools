@@ -19,6 +19,9 @@ html_theme_path = [better_theme_path]
 html_theme = 'better'
 html_theme_options = {
     'inlinecss': """
+        #commands h4 {
+            font-family: Monaco, Consolas, "Lucida Console", monospace;
+        }
     """,
     'cssfiles': [],
     'scriptfiles': [],
