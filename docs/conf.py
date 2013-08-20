@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-
 from better import better_theme_path
-print better_theme_path
 
 extensions = []
 templates_path = []
