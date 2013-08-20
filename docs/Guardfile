@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+from livereload.task import Task
+from livereload.compiler import shell
+
+# You may have a different path, e.g. _source/
+Task.add('*.rst', shell('make html'))
+Task.add('*/*.rst', shell('make html'))
+Task.add('_static/*.css', shell('make html'))
+Task.add('Makefile', shell('make html'))
+Task.add('Guardfile', shell('make html'))
+Task.add('conf.py', shell('make html'))
+Task.add('../better', shell('make clean html'))
