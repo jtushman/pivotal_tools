@@ -59,7 +59,7 @@ Lists all stories for a given project (will prompt you if not specified).
     Number of stories to show. Defaults to 20.
 
 show_story <story_id>
-^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -68,7 +68,7 @@ show_story <story_id>
 Show the details for a given story.
 
 browser_open <story_id>
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -108,7 +108,7 @@ create
 Create a story.
 
 <verb> story <story_id>
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
