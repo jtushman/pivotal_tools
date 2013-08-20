@@ -65,8 +65,7 @@ Create a story
 Change the state of a story
 
 
-
-
+```
 Usage:
   pivotal_tools changelog [--project-index=<pi>]
   pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
