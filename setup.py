@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='pivotal_tools',
-      version='0.12',
+      version='0.13',
       description='Collection of pivotal command line tools',
       url='http://github.com/jtushman/pivotal_tools',
       author='Jonathan Tushman',

@@ -1,4 +1,4 @@
-pivotal_tools v0.12
+pivotal_tools v0.13
 ===================
 
 pivotal_tools is a geeky command-line interface with additional scrum, planning
