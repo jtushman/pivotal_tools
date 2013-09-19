@@ -124,7 +124,6 @@ class Story(object):
         """changes the estimate of a story"""
         update_story_url ="https://www.pivotaltracker.com/services/v3/projects/{}/stories/{}?story[estimate]={}".format(self.project_id, self.story_id, estimate)
         response = _perform_pivotal_put(update_story_url)
-        print response.text
 
     def set_state(self, state):
         """changes the estimate of a story"""
@@ -176,7 +175,7 @@ class Project(object):
         """returns all projects for the given user"""
         projects_url = 'https://www.pivotaltracker.com/services/v3/projects'
         response = _perform_pivotal_get(projects_url)
-        #print response.text
+
         root = ET.fromstring(response.text)
         if root is not None:
             return [Project.from_node(project_node) for project_node in root]
@@ -224,7 +223,10 @@ class Project(object):
 
     def unestimated_stories(self):
         stories = self.get_stories('type:feature state:unstarted')
-        return [story for story in stories if int(story.estimate) == -1]
+        return self.open_bugs() + [story for story in stories if int(story.estimate) == -1]
+
+    def open_bugs(self):
+        return self.get_stories('type:bug state:unstarted')
 
     def in_progress_stories(self):
         return self.get_stories('state:started,rejected')
@@ -239,6 +241,8 @@ class Project(object):
         return self.get_stories('state:unscheduled,unstarted,started,rejected type:bug')
 
 
+# TODO Handle requests.exceptions.ConnectionError
+
 def _perform_pivotal_get(url):
     headers = {'X-TrackerToken': TOKEN}
     # print url
@@ -247,21 +251,15 @@ def _perform_pivotal_get(url):
 
 
 def _perform_pivotal_put(url):
-    print "trying [{}]".format(url)
     headers = {'X-TrackerToken': TOKEN, 'Content-Length': 0}
     response = requests.put(url, headers=headers)
     response.raise_for_status()
     return response
 
 def _perform_pivotal_post(url,payload_xml):
-    print url
-    print payload_xml
     headers = {'X-TrackerToken': TOKEN, 'Content-type': "application/xml"}
     response = requests.post(url, data=payload_xml, headers=headers)
     response.raise_for_status()
-    print response.headers
-    print response.text
-    print response.status_code
     return response
 
 

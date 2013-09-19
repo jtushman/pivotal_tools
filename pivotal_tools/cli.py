@@ -36,15 +36,14 @@ Create a story
 
 
 Usage:
-  pivotal_tools changelog [--project-index=<pi>]
-  pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
-  pivotal_tools show_story <story_id> [--project-index=<pi>]
-  pivotal_tools browser_open <story_id> [--project-index=<pi>]
-  pivotal_tools scrum [--project-index=<pi>]
-  pivotal_tools poker [--project-index=<pi>]
-  pivotal_tools planning [--project-index=<pi>]
   pivotal_tools create (feature|bug|chore) <title> [<description>] [--project-index=<pi>]
   pivotal_tools (start|finish|deliver|accept|reject) story <story_id> [--project-index=<pi>]
+  pivotal_tools show stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
+  pivotal_tools show story <story_id> [--project-index=<pi>]
+  pivotal_tools open <story_id> [--project-index=<pi>]
+  pivotal_tools changelog [--project-index=<pi>]
+  pivotal_tools scrum [--project-index=<pi>]
+  pivotal_tools (planning|poker) [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
@@ -218,6 +217,15 @@ def scrum(project):
 
         print
 
+    print bold("Bugs")
+    bugs = project.open_bugs()
+    if len(bugs) == 0:
+        print 'Not sure that I believe it, but there are no bugs'
+    for bug in bugs:
+        print "   #{:12s} {:4s} {}".format(bug.story_id,
+                                     initials(bug.owned_by),
+                                     bug.name)
+
 
 def poker(project):
     """CLI driven tool to help facilitate the periodic poker planning session
@@ -225,7 +233,6 @@ def poker(project):
     Will loop through and display unestimated stories, and prompt the team for an estimate.
     You can also open the current story in a browser for additional editing
     """
-
     total_stories = len(project.unestimated_stories())
     for idx, story in enumerate(project.unestimated_stories()):
         clear()
@@ -471,7 +478,6 @@ def _get_column_dimensions():
 
 
 def main():
-    clear()
 
     arguments = docopt(__doc__)
 
@@ -480,12 +486,12 @@ def main():
     if arguments['changelog']:
         project = prompt_project(arguments)
         generate_changelog(project)
-    elif arguments['show_stories']:
+    elif arguments['show'] and arguments['stories']:
         project = prompt_project(arguments)
         show_stories(project, arguments)
-    elif arguments['show_story']:
+    elif arguments['show'] and arguments['story']:
         show_story(arguments['<story_id>'], arguments)
-    elif arguments['browser_open']:
+    elif arguments['open']:
         browser_open(arguments['<story_id>'], arguments)
     elif arguments['scrum']:
         project = prompt_project(arguments)
