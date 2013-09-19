@@ -37,6 +37,14 @@ class Note(object):
         self.author = author
 
 
+class Task(object):
+    """object representation of a Pivotal Task, should be accessed from story.tasks"""
+    def __init__(self, task_id, description, complete):
+        self.task_id = task_id
+        self.description = description
+        self.complete = complete
+
+
 class Attachment(object):
     """object representation of a Pivotal attachment, should be accessed from story.attachments"""
     def __init__(self, attachment_id, description, url):
@@ -60,6 +68,7 @@ class Story(object):
         self.labels = None
         self.notes = []
         self.attachments = []
+        self.tasks = []
 
 
     @property
@@ -115,6 +124,14 @@ class Story(object):
                 description = _parse_text(attachment_node, 'text')
                 url = _parse_text(attachment_node, 'url')
                 story.attachments.append(Attachment(attachment_id,description,url))
+
+        task_nodes = node.find('tasks')
+        if task_nodes is not None:
+            for task_node in task_nodes:
+                task_id = _parse_text(task_node, 'id')
+                description = _parse_text(task_node, 'description')
+                complete = _parse_boolean(task_node, 'complete')
+                story.tasks.append(Task(task_id, description, complete))
 
 
 
@@ -208,6 +225,7 @@ class Project(object):
         story_url = "https://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(self.project_id, story_id)
 
         resposne = _perform_pivotal_get(story_url)
+        # print resposne.text
         if resposne.status_code == 404:
             # Not Found
             return None
@@ -290,5 +308,16 @@ def _parse_array(node, key):
     element = node.find(key)
     if element is not None:
         return element.text.split(',')
+    else:
+        return None
+
+def _parse_boolean(node, key):
+    """parses an boolean from an ElementTree node, if not found returns None"""
+    element = node.find(key)
+    if element is not None:
+        if element.text == 'true':
+            return True
+        else:
+            return False
     else:
         return None

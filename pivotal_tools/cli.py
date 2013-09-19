@@ -187,6 +187,13 @@ def show_story(story_id, arguments):
         for note in story.notes:
             print "[{}] {}".format(initials(note.author), note.text)
 
+
+    if len(story.tasks) > 0:
+        print
+        print bold("Tasks:")
+        for task in story.tasks:
+            print "[{}] {}".format(x_or_space(task.complete), task.description)
+
     if len(story.attachments) > 0:
         print
         print bold("Attachments:")
@@ -446,6 +453,13 @@ def pretty_print_story(story):
                 print "Description: {}".format(attachment.description)
             print "Url: {}".format(colored(attachment.url, 'blue'))
 
+
+    if len(story.tasks) > 0:
+        print
+        print bold("Tasks:")
+        for task in story.tasks:
+            print "[{}] {}".format(x_or_space(task.complete), task.description)
+
     if len(story.labels) > 0:
         print
         print "{} {}".format(bold('Labels:'), story.labels)
@@ -475,6 +489,13 @@ def prompt_estimation(project, story):
 def _get_column_dimensions():
     rows, cols = os.popen('stty size', 'r').read().split()
     return int(rows), int(cols)
+
+
+def x_or_space(complete):
+    if complete:
+        return 'X'
+    else:
+        return ' '
 
 
 def main():
