@@ -1,4 +1,4 @@
-pivotal_tools v0.13
+pivotal_tools v0.14
 ===================
 
 pivotal_tools is a geeky command-line interface with additional scrum, planning
@@ -47,7 +47,7 @@ changelog
 
 List out projects stories that are delivered or finished (not accepted)
 
-show_stories
+show stories
 ^^^^^^^^^^^^
 
 Lists all stories for a given project (will prompt you if not specified).
@@ -58,21 +58,21 @@ Lists all stories for a given project (will prompt you if not specified).
 :option:`--number`
     Number of stories to show. Defaults to 20.
 
-show_story <story_id>
+show story <story_id>
 ^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
-    pivotal_tools show_story <story_id>
+    pivotal_tools show story <story_id>
 
 Show the details for a given story.
 
-browser_open <story_id>
-^^^^^^^^^^^^^^^^^^^^^^^
+open <story_id>
+^^^^^^^^^^^^^^^
 
 ::
 
-    pivotal_tools browser_open <story_id>
+    pivotal_tools open <story_id>
 
 Will open the given story in a browser.
 
@@ -124,9 +124,9 @@ Change the state of a story.
 
     Usage:
     pivotal_tools changelog [--project-index=<pi>]
-    pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
-    pivotal_tools show_story <story_id> [--project-index=<pi>]
-    pivotal_tools browser_open <story_id> [--project-index=<pi>]
+    pivotal_tools show stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
+    pivotal_tools show story <story_id> [--project-index=<pi>]
+    pivotal_tools open <story_id> [--project-index=<pi>]
     pivotal_tools scrum [--project-index=<pi>]
     pivotal_tools poker [--project-index=<pi>]
     pivotal_tools planning [--project-index=<pi>]

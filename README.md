@@ -34,17 +34,17 @@ changelog
 ---------------
 List out projects stories that are delivered or finished (not accepted)
 
-show_stories
+show stories
 ---------------
 Lists all stories for a given project (will prompt you if not specified)
 Can filter by user with the `for` option
 By default show the top 20 stories, can specify more (or less) with the _number_ option
 
-show_story
+show story
 ---------------
 Show the details for a given story.  passing the project-index parameter will make it faster
 
-browser_open
+open
 ---------------
 Will open the given story in a browser.  passing the project-index parameter will make it faster
 
@@ -60,27 +60,20 @@ create (feature|bug|chore)
 ---------------
 Create a story
 
-(start|finish|deliver|accept|reject) story
-------------------------------------------
-Change the state of a story
 
-
-```
 Usage:
-  pivotal_tools changelog [--project-index=<pi>]
-  pivotal_tools show_stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
-  pivotal_tools show_story <story_id> [--project-index=<pi>]
-  pivotal_tools browser_open <story_id> [--project-index=<pi>]
-  pivotal_tools scrum [--project-index=<pi>]
-  pivotal_tools poker [--project-index=<pi>]
-  pivotal_tools planning [--project-index=<pi>]
   pivotal_tools create (feature|bug|chore) <title> [<description>] [--project-index=<pi>]
   pivotal_tools (start|finish|deliver|accept|reject) story <story_id> [--project-index=<pi>]
+  pivotal_tools show stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
+  pivotal_tools show story <story_id> [--project-index=<pi>]
+  pivotal_tools open <story_id> [--project-index=<pi>]
+  pivotal_tools changelog [--project-index=<pi>]
+  pivotal_tools scrum [--project-index=<pi>]
+  pivotal_tools (planning|poker) [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
   --for=<user_name>     Username, or initials
   --project-index=<pi>  If you have multiple projects, this is the index that the project shows up in my prompt
                         This is useful if you do not want to be prompted, and then you can pipe the output
-```
 

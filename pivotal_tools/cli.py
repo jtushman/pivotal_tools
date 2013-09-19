@@ -8,17 +8,17 @@ changelog
 ---------------
 List out projects stories that are delivered or finished (not accepted)
 
-show_stories
+show stories
 ---------------
 Lists all stories for a given project (will prompt you if not specified)
 Can filter by user with the `for` option
 By default show the top 20 stories, can specify more (or less) with the _number_ option
 
-show_story
+show story
 ---------------
 Show the details for a given story.  passing the project-index parameter will make it faster
 
-browser_open
+open
 ---------------
 Will open the given story in a browser.  passing the project-index parameter will make it faster
 
