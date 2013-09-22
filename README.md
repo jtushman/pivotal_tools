@@ -61,7 +61,10 @@ create (feature|bug|chore)
 Create a story
 
 
-Usage:
+
+CLI
+---
+```
   pivotal_tools create (feature|bug|chore) <title> [<description>] [--project-index=<pi>]
   pivotal_tools (start|finish|deliver|accept|reject) story <story_id> [--project-index=<pi>]
   pivotal_tools show stories [--project-index=<pi>] [--for=<user_name>] [--number=<number_of_stories>]
@@ -76,4 +79,4 @@ Options:
   --for=<user_name>     Username, or initials
   --project-index=<pi>  If you have multiple projects, this is the index that the project shows up in my prompt
                         This is useful if you do not want to be prompted, and then you can pipe the output
-
+```
