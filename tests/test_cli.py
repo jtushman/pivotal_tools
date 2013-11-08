@@ -27,8 +27,10 @@ class StoryFactory(factory.StubFactory):
 
 
 def test_stories():
-    cli.show_stories(TestProject([StoryFactory()]),
-                     {'--for': None, '--number': 2})
+    assert (
+        cli.show_stories(TestProject([StoryFactory()]),
+                         {'--for': None, '--number': 2})
+        == ['#42           SP  bug      started      [*       ] F\xf8\xf8'])
 
 
 def test_decode_dict():

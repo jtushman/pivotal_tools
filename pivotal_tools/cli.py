@@ -138,6 +138,7 @@ def show_stories(project, arguments):
     You can further filter the list by passing the --for argument and pass
     the initials of the user
     """
+    lines = []
 
     search_string = 'state:unscheduled,unstarted,rejected,started'
     if arguments['--for'] is not None:
@@ -149,22 +150,24 @@ def show_stories(project, arguments):
     if arguments['--number'] is not None:
         number_of_stories = int(arguments['--number'])
     else:
-        print('')
-        print("Showing the top 20 stories, if you want to show more,"
-              " specify number with the --number option")
-        print('')
+        lines.append('')
+        lines.append("Showing the top 20 stories, if you want to show more,"
+                     " specify number with the --number option")
+        lines.append('')
 
     if len(stories) == 0:
-        print("None")
+        lines.append("None")
     else:
         for story in islice(stories, number_of_stories):
-            print('{:14s}{:4s}{:9s}{:13s}{:10s} {}'.format(
+            lines.append('{:14s}{:4s}{:9s}{:13s}{:10s} {}'.format(
                 '#{}'.format(story.story_id),
                 initials(story.owned_by),
                 story.story_type,
                 story.state,
                 estimate_visual(story.estimate),
                 story.name))
+
+    return lines
 
 
 def show_story(story_id, arguments):
@@ -528,15 +531,23 @@ def decode_dict(items, encoding):
 
 
 def main():
-    arguments = decode_dict(docopt(__doc__), sys.stdin.encoding)
+    input_encoding = 'utf-8'
+    if sys.stdin.encoding is not None:
+        input_encoding = sys.stdin.encoding
+    output_encoding = 'utf-8'
+    if sys.stdout.encoding is not None:
+        output_encoding = sys.stdout.encoding
+
+    arguments = decode_dict(docopt(__doc__), input_encoding)
     check_api_token()
 
+    lines = None
     if arguments['changelog']:
         project = prompt_project(arguments)
         generate_changelog(project)
     elif arguments['show'] and arguments['stories']:
         project = prompt_project(arguments)
-        show_stories(project, arguments)
+        lines = show_stories(project, arguments)
     elif arguments['show'] and arguments['story']:
         show_story(arguments['<story_id>'], arguments)
     elif arguments['open']:
@@ -555,6 +566,8 @@ def main():
     else:
         print(arguments)
 
+    if lines is not None:
+        sys.stdout.write('\n'.join(lines + ['']).encode(output_encoding))
 
 if __name__ == '__main__':
     main()
