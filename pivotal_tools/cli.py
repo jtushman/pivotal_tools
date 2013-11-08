@@ -210,36 +210,35 @@ def show_story(story_id, arguments):
     print('')
 
 
-def scrum(project):
+def scrum(project_name, stories, bugs):
     """ CLI Visual Aid for running the daily SCRUM meeting.
         Prints an list of stories that people are working on grouped by user
     """
+    lines = []
 
-    stories = project.in_progress_stories()
+    lines.append(bold("{} SCRUM -- {}".format(project_name, pretty_date())))
+    lines.append('')
+
     stories_by_owner = group_stories_by_owner(stories)
-
-    print(bold("{} SCRUM -- {}".format(project.name, pretty_date())))
-    print('')
-
     for owner in stories_by_owner:
-        print(bold(owner))
+        lines.append(bold(owner))
         for story in stories_by_owner[owner]:
-            print("   #{:12s}{:9s} {:7s} {}".format(
+            lines.append("   #{:12s}{:9s} {:7s} {}".format(
                 story.story_id,
                 estimate_visual(story.estimate),
                 story.story_type,
                 story.name))
 
-        print('')
+        lines.append('')
 
-    print(bold("Bugs"))
-    bugs = project.open_bugs()
+    lines.append(bold("Bugs"))
     if len(bugs) == 0:
-        print('Not sure that I believe it, but there are no bugs')
+        lines.append('Not sure that I believe it, but there are no bugs')
     for bug in bugs:
-        print("   #{:12s} {:4s} {}".format(bug.story_id,
-                                           initials(bug.owned_by),
-                                           bug.name))
+        lines.append("   #{:12s} {:4s} {}".format(bug.story_id,
+                                                  initials(bug.owned_by),
+                                                  bug.name))
+    return lines
 
 
 def poker(project):
@@ -549,7 +548,9 @@ def main():
         browser_open(arguments['<story_id>'], arguments)
     elif arguments['scrum']:
         project = prompt_project(arguments)
-        scrum(project)
+        lines = scrum(project.name,
+                      project.in_progress_stories(),
+                      project.open_bugs())
     elif arguments['poker'] or arguments['planning']:
         project = prompt_project(arguments)
         poker(project)
