@@ -1,6 +1,9 @@
 # Core Imports
 import os
-from urllib import quote
+try:
+    from urllib.parse import quote as quote
+except ImportError:
+    from urllib import quote  # flake8: noqa
 import xml.etree.ElementTree as ET
 
 # 3rd Party Imports
@@ -21,7 +24,7 @@ def find_project_for_story(story_id):
             return project
 
     #Not found
-    print "No project found for story: #{}".format(story_id)
+    print("No project found for story: #{}".format(story_id))
     return None
 
 
@@ -225,7 +228,7 @@ class Project(object):
         story_url = "https://www.pivotaltracker.com/services/v3/projects/{}/stories/{}".format(self.project_id, story_id)
 
         resposne = _perform_pivotal_get(story_url)
-        # print resposne.text
+        # print(resposne.text)
         if resposne.status_code == 404:
             # Not Found
             return None
@@ -263,7 +266,7 @@ class Project(object):
 
 def _perform_pivotal_get(url):
     headers = {'X-TrackerToken': TOKEN}
-    # print url
+    # print(url)
     response = requests.get(url, headers=headers)
     return response
 

@@ -54,6 +54,7 @@ Options:
 """
 
 #Core Imports
+from __future__ import unicode_literals
 import os
 import webbrowser
 from itertools import islice
@@ -63,7 +64,7 @@ from itertools import islice
 from docopt import docopt
 from termcolor import colored
 
-from pivotal import Project, Story, InvalidStateException
+from pivotal_tools.pivotal import Project, Story, InvalidStateException
 
 
 ## Main Methods
@@ -81,13 +82,13 @@ def generate_changelog(project):
 
     title_string = 'Change Log {}'.format(project.name)
 
-    print
-    print bold(title_string)
-    print bold('=' * len(title_string))
-    print
+    print('')
+    print(bold(title_string))
+    print(bold('=' * len(title_string)))
+    print('')
 
-    print bold('New Features')
-    print bold('============')
+    print(bold('New Features'))
+    print(bold('============'))
 
     finished_features = project.finished_features()
     features_by_label = group_stories_by_label(finished_features)
@@ -97,10 +98,10 @@ def generate_changelog(project):
             display_label = 'Other'
         else:
             display_label = label
-        print bold(display_label.title())
+        print(bold(display_label.title()))
         for story in features_by_label[label]:
-            print '    * {:14s} {}'.format('[{}]'.format(story.story_id), story.name)
-
+            print('    * {:14s} {}'.format('[{}]'.format(
+                story.story_id), story.name))
 
     def print_stories(stories):
         if len(stories) > 0:
@@ -110,29 +111,31 @@ def generate_changelog(project):
                     story_string += "[{}] ".format(story.labels)
 
                 story_string += story.name
-                print '* {:14s} {}'.format('[{}]'.format(story.story_id), story_string)
+                print('* {:14s} {}'.format(
+                    '[{}]'.format(story.story_id), story_string))
         else:
-            print 'None'
-            print
+            print('None')
+            print('')
 
-
-    print
-    print bold('Bugs Fixed')
-    print bold('==========')
+    print('')
+    print(bold('Bugs Fixed'))
+    print(bold('=========='))
     print_stories(project.finished_bugs())
 
-    print
-    print bold('Known Issues')
-    print bold('==========')
+    print('')
+    print(bold('Known Issues'))
+    print(bold('=========='))
     print_stories(project.known_issues())
 
-    print
+    print('')
 
 
 def show_stories(project, arguments):
     """Shows the top stories
-    By default it will show the top 20.  But that change be changed by the --number arguement
-    You can further filter the list by passing the --for argument and pass the initials of the user
+    By default it will show the top 20.  But that change be changed by the
+    --number argument.
+    You can further filter the list by passing the --for argument and pass
+    the initials of the user
     """
 
     search_string = 'state:unscheduled,unstarted,rejected,started'
@@ -145,62 +148,68 @@ def show_stories(project, arguments):
     if arguments['--number'] is not None:
         number_of_stories = int(arguments['--number'])
     else:
-        print
-        print "Showing the top 20 stories, if you want to show more, specify number with the --number option"
-        print
-
+        print('')
+        print("Showing the top 20 stories, if you want to show more,"
+              " specify number with the --number option")
+        print('')
 
     if len(stories) == 0:
-        print "None"
+        print("None")
     else:
         for story in islice(stories, number_of_stories):
-            print '{:14s}{:4s}{:9s}{:13s}{:10s} {}'.format('#{}'.format(story.story_id),
-                                                           initials(story.owned_by),
-                                                           story.story_type,
-                                                           story.state,
-                                                           estimate_visual(story.estimate),
-                                                           story.name)
+            print('{:14s}{:4s}{:9s}{:13s}{:10s} {}'.format(
+                '#{}'.format(story.story_id),
+                initials(story.owned_by),
+                story.story_type,
+                story.state,
+                estimate_visual(story.estimate),
+                story.name))
 
 
 def show_story(story_id, arguments):
     """Shows the Details for a single story
 
-    Will find the associate project, then look up the story and print of the details
+    Will find the associate project,
+    then look up the story and print of the details
     """
 
     story = load_story(story_id, arguments)
 
-
-    print
-    print colored('{:12s}{:4s}{:9s}{:10s} {}'.format('#{}'.format(story.story_id),
-                                                     initials(story.owned_by),
-                                                     story.story_type,
-                                                     estimate_visual(story.estimate),
-                                                     story.name), 'white', attrs=['bold'])
-    print
-    print colored("Story Url: ", 'white', attrs=['bold']) + colored(story.url, 'blue', attrs=['underline'])
-    print colored("Description: ", 'white', attrs=['bold']) + story.description
+    print('')
+    print(colored('{:12s}{:4s}{:9s}{:10s} {}'.format(
+        '#{}'.format(story.story_id),
+        initials(story.owned_by),
+        story.story_type,
+        estimate_visual(story.estimate),
+        story.name), 'white', attrs=['bold']))
+    print('')
+    print(colored("Story Url: ", 'white', attrs=['bold'])
+          + colored(story.url, 'blue', attrs=['underline']))
+    print(colored("Description: ", 'white', attrs=['bold'])
+          + story.description)
 
     if len(story.notes) > 0:
-        print
-        print bold("Notes:")
+        print('')
+        print(bold("Notes:"))
         for note in story.notes:
-            print "[{}] {}".format(initials(note.author), note.text)
-
+            print("[{}] {}".format(initials(note.author), note.text))
 
     if len(story.tasks) > 0:
-        print
-        print bold("Tasks:")
+        print('')
+        print(bold("Tasks:"))
         for task in story.tasks:
-            print "[{}] {}".format(x_or_space(task.complete), task.description)
+            print("[{}] {}".format(
+                x_or_space(task.complete), task.description))
 
     if len(story.attachments) > 0:
-        print
-        print bold("Attachments:")
+        print('')
+        print(bold("Attachments:"))
         for attachment in story.attachments:
-            print "{} {}".format(attachment.description, colored(attachment.url,'blue',attrs=['underline']))
+            print("{} {}".format(
+                attachment.description,
+                colored(attachment.url, 'blue', attrs=['underline'])))
 
-    print
+    print('')
 
 
 def scrum(project):
@@ -211,27 +220,28 @@ def scrum(project):
     stories = project.in_progress_stories()
     stories_by_owner = group_stories_by_owner(stories)
 
-    print bold("{} SCRUM -- {}".format(project.name, pretty_date()))
-    print
+    print(bold("{} SCRUM -- {}".format(project.name, pretty_date())))
+    print('')
 
     for owner in stories_by_owner:
-        print bold(owner)
+        print(bold(owner))
         for story in stories_by_owner[owner]:
-            print "   #{:12s}{:9s} {:7s} {}".format(story.story_id,
-                                                    estimate_visual(story.estimate),
-                                                    story.story_type,
-                                                    story.name)
+            print("   #{:12s}{:9s} {:7s} {}".format(
+                story.story_id,
+                estimate_visual(story.estimate),
+                story.story_type,
+                story.name))
 
-        print
+        print('')
 
-    print bold("Bugs")
+    print(bold("Bugs"))
     bugs = project.open_bugs()
     if len(bugs) == 0:
-        print 'Not sure that I believe it, but there are no bugs'
+        print('Not sure that I believe it, but there are no bugs')
     for bug in bugs:
-        print "   #{:12s} {:4s} {}".format(bug.story_id,
-                                     initials(bug.owned_by),
-                                     bug.name)
+        print("   #{:12s} {:4s} {}".format(bug.story_id,
+                                           initials(bug.owned_by),
+                                           bug.name))
 
 
 def poker(project):
@@ -244,12 +254,14 @@ def poker(project):
     for idx, story in enumerate(project.unestimated_stories()):
         clear()
         rows, cols = _get_column_dimensions()
-        print "{} PLANNING POKER SESSION [{}]".format(project.name.upper(), bold("{}/{} Stories Estimated".format(idx+1, total_stories)))
-        print "-" * cols
+        print("{} PLANNING POKER SESSION [{}]".format(
+            project.name.upper(),
+            bold("{}/{} Stories Estimated".format(idx + 1, total_stories))))
+        print("-" * cols)
         pretty_print_story(story)
         prompt_estimation(project, story)
     else:
-        print "KaBoom!!! Nice Work Team"
+        print("KaBoom!!! Nice Work Team")
 
 
 def load_story(story_id, arguments):
@@ -301,24 +313,29 @@ def update_status(arguments):
 
             if arguments['start']:
                 story.start()
-                print "Story: [{}] {} is STARTED".format(story.story_id, story.name)
+                print("Story: [{}] {} is STARTED".format(
+                    story.story_id, story.name))
             elif arguments['finish']:
                 story.finish()
-                print "Story: [{}] {} is FINISHED".format(story.story_id, story.name)
+                print("Story: [{}] {} is FINISHED".format(
+                    story.story_id, story.name))
             elif arguments['deliver']:
                 story.deliver()
-                print "Story: [{}] {} is DELIVERED".format(story.story_id, story.name)
+                print("Story: [{}] {} is DELIVERED".format(
+                    story.story_id, story.name))
             elif arguments['accept']:
                 story.accept()
-                print "Story: [{}] {} is ACCEPTED".format(story.story_id, story.name)
+                print("Story: [{}] {} is ACCEPTED".format(
+                    story.story_id, story.name))
             elif arguments['reject']:
                 story.reject()
-                print "Story: [{}] {} is REJECTED".format(story.story_id, story.name)
+                print("Story: [{}] {} is REJECTED".format(
+                    story.story_id, story.name))
 
-        except InvalidStateException, e:
-            print e.message
+        except InvalidStateException as e:
+            print(e.message)
     else:
-        print "hmmm could not find story"
+        print("hmmm could not find story")
 
 
 
@@ -344,19 +361,19 @@ def prompt_project(arguments):
             project = projects[idx]
             return project
         except:
-            print 'Yikes, that did not work -- try again?'
+            print('Yikes, that did not work -- try again?')
             exit()
 
     while True:
-        print "Select a Project:"
+        print("Select a Project:")
         for idx, project in enumerate(projects):
-            print "[{}] {}".format(idx+1, project.name)
+            print("[{}] {}".format(idx+1, project.name))
         s = raw_input('>> ')
 
         try:
             project = projects[int(s) - 1]
         except:
-            print 'Hmmm, that did not work -- try again?'
+            print('Hmmm, that did not work -- try again?')
             continue
 
         break
@@ -369,15 +386,16 @@ def check_api_token():
 
     token = os.getenv('PIVOTAL_TOKEN', None)
     if token is None:
-        print """
-        You need to have your pivotal developer token set to the 'PIVOTAL_TOKEN' env variable.
+        print("""
+        You need to have your pivotal developer token set to the
+        'PIVOTAL_TOKEN' env variable.
 
         I keep mine in ~/.zshenv
         export PIVOTAL_TOKEN='your token'
 
-        If you do not have one, login to pivotal, and go to your profile page, and scroll to the bottom.
-        You'll find it there.
-        """
+        If you do not have one, login to pivotal, and go to your profile page,
+        and scroll to the bottom. You'll find it there.
+        """)
         exit()
 
 
@@ -433,41 +451,42 @@ def clear():
 
 def pretty_print_story(story):
     print
-    print bold(story.name)
+    print(bold(story.name))
     if len(story.description) > 0:
-        print
-        print story.description
-        print
+        print('')
+        print(story.description)
+        print('')
 
     if len(story.notes) > 0:
-        print
-        print bold('Notes:')
+        print('')
+        print(bold('Notes:'))
         for note in story.notes:
-            print "[{}] {}".format(initials(note.author), note.text)
+            print("[{}] {}".format(initials(note.author), note.text))
 
     if len(story.attachments) > 0:
-        print
-        print bold('Attachments:')
+        print('')
+        print(bold('Attachments:'))
         for attachment in story.attachments:
             if len(attachment.description) > 0:
-                print "Description: {}".format(attachment.description)
-            print "Url: {}".format(colored(attachment.url, 'blue'))
+                print("Description: {}".format(attachment.description))
+            print("Url: {}".format(colored(attachment.url, 'blue')))
 
 
     if len(story.tasks) > 0:
-        print
-        print bold("Tasks:")
+        print('')
+        print(bold("Tasks:"))
         for task in story.tasks:
-            print "[{}] {}".format(x_or_space(task.complete), task.description)
+            print("[{}] {}".format(x_or_space(task.complete), task.description))
 
     if len(story.labels) > 0:
-        print
-        print "{} {}".format(bold('Labels:'), story.labels)
+        print('')
+        print("{} {}".format(bold('Labels:'), story.labels))
 
 
 def prompt_estimation(project, story):
-    print
-    print bold("Estimate: [{}, (s)kip, (o)pen, (q)uit]".format(','.join(project.point_scale)))
+    print('')
+    print(bold("Estimate: [{}, (s)kip, (o)pen, (q)uit]".format(
+        ','.join(project.point_scale))))
     input_value = raw_input(bold('>> '))
 
     if input_value in ['s', 'S']:
@@ -482,7 +501,7 @@ def prompt_estimation(project, story):
         value = int(input_value)
         story.assign_estimate(value)
     else:
-        print "Invalid Input, Try again"
+        print("Invalid Input, Try again")
         prompt_estimation(project, story)
 
 
@@ -526,7 +545,7 @@ def main():
     elif arguments['story']:
         update_status(arguments)
     else:
-        print arguments
+        print(arguments)
 
 
 if __name__ == '__main__':
