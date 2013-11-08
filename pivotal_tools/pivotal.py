@@ -1,4 +1,5 @@
 # Core Imports
+from __future__ import unicode_literals
 import os
 try:
     from urllib.parse import quote as quote
@@ -214,7 +215,7 @@ class Project(object):
         Look at [link](https://www.pivotaltracker.com/help/faq#howcanasearchberefined) for syntax
 
         """
-        story_filter = quote(filter_string.encode('utf-8'), safe='')
+        story_filter = quote(filter_string.encode('utf-8'), safe=b'')
         stories_url = "https://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
         response = _perform_pivotal_get(stories_url)
         stories_root = ET.fromstring(response.text)
@@ -258,6 +259,12 @@ class Project(object):
 
     def known_issues(self):
         return self.get_stories('state:unscheduled,unstarted,started,rejected type:bug')
+
+    def open_stories(self, owner=None):
+        search_string = 'state:unscheduled,unstarted,rejected,started'
+        if owner is not None:
+            search_string += " owner:{}".format(owner)
+        return self.get_stories(search_string)
 
 
 # TODO Handle requests.exceptions.ConnectionError

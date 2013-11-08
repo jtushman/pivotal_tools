@@ -131,7 +131,7 @@ def generate_changelog(project):
     print('')
 
 
-def show_stories(project, arguments):
+def show_stories(stories, arguments):
     """Shows the top stories
     By default it will show the top 20.  But that change be changed by the
     --number argument.
@@ -139,12 +139,6 @@ def show_stories(project, arguments):
     the initials of the user
     """
     lines = []
-
-    search_string = 'state:unscheduled,unstarted,rejected,started'
-    if arguments['--for'] is not None:
-        search_string += " owner:{}".format(arguments['--for'])
-
-    stories = project.get_stories(search_string)
 
     number_of_stories = 20
     if arguments['--number'] is not None:
@@ -547,7 +541,8 @@ def main():
         generate_changelog(project)
     elif arguments['show'] and arguments['stories']:
         project = prompt_project(arguments)
-        lines = show_stories(project, arguments)
+        lines = show_stories(project.open_stories(arguments.get('--for')),
+                             arguments)
     elif arguments['show'] and arguments['story']:
         show_story(arguments['<story_id>'], arguments)
     elif arguments['open']:

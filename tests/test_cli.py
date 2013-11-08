@@ -5,14 +5,6 @@ import factory
 from pivotal_tools import cli
 
 
-class TestProject(object):
-    def __init__(self, stories):
-        self.stories = stories
-
-    def get_stories(self, pattern):
-        return self.stories
-
-
 class StoryFactory(factory.StubFactory):
     story_id = 42
     project_id = 43
@@ -28,7 +20,7 @@ class StoryFactory(factory.StubFactory):
 
 def test_stories():
     assert (
-        cli.show_stories(TestProject([StoryFactory()]),
+        cli.show_stories([StoryFactory()],
                          {'--for': None, '--number': 2})
         == ['#42           SP  bug      started      [*       ] F\xf8\xf8'])
 
