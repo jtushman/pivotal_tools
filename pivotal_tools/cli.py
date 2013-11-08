@@ -56,6 +56,7 @@ Options:
 #Core Imports
 from __future__ import unicode_literals
 import os
+import sys
 import webbrowser
 from itertools import islice
 
@@ -517,10 +518,17 @@ def x_or_space(complete):
         return ' '
 
 
+def decode_dict(items, encoding):
+    new_items = {}
+    for key, val in items.items():
+        if isinstance(val, type(b'')):
+            val = val.decode(encoding)
+        new_items[key] = val
+    return new_items
+
+
 def main():
-
-    arguments = docopt(__doc__)
-
+    arguments = decode_dict(docopt(__doc__), sys.stdin.encoding)
     check_api_token()
 
     if arguments['changelog']:

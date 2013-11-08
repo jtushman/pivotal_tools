@@ -214,10 +214,8 @@ class Project(object):
         Look at [link](https://www.pivotaltracker.com/help/faq#howcanasearchberefined) for syntax
 
         """
-
-        story_filter = quote(filter_string, safe='')
+        story_filter = quote(filter_string.encode('utf-8'), safe='')
         stories_url = "https://www.pivotaltracker.com/services/v3/projects/{}/stories?filter={}".format(self.project_id, story_filter)
-
         response = _perform_pivotal_get(stories_url)
         stories_root = ET.fromstring(response.text)
 
