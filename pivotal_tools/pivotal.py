@@ -248,8 +248,14 @@ class Project(object):
     def open_bugs(self):
         return self.get_stories('type:bug state:unstarted')
 
-    def in_progress_stories(self):
-        return self.get_stories('state:started,rejected')
+    def in_progress_stories(self, finished_is_in_progress=False,
+                            delivered_is_in_progress=False):
+        _filter = 'state:started,rejected'
+        if finished_is_in_progress:
+            _filter += ',finished'
+        if finished_is_in_progress:
+            _filter += ',delivered'
+        return self.get_stories(_filter)
 
     def finished_features(self):
         return self.get_stories('state:delivered,finished type:feature')
@@ -261,7 +267,7 @@ class Project(object):
         return self.get_stories('state:unscheduled,unstarted,started,rejected type:bug')
 
     def open_stories(self, owner=None):
-        search_string = 'state:unscheduled,unstarted,rejected,started'
+        search_string = 'state:unscheduled,unstarted,rejected,started,finished'
         if owner is not None:
             search_string += " owner:{}".format(owner)
         return self.get_stories(search_string)

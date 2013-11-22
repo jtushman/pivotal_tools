@@ -42,14 +42,19 @@ Usage:
   pivotal_tools show story <story_id> [--project-index=<pi>]
   pivotal_tools open <story_id> [--project-index=<pi>]
   pivotal_tools changelog [--project-index=<pi>]
-  pivotal_tools scrum [--project-index=<pi>]
+  pivotal_tools scrum [--project-index=<pi>] [--show-finished] [--show-delivered]
   pivotal_tools (planning|poker) [--project-index=<pi>]
 
 Options:
   -h --help             Show this screen.
   --for=<user_name>     Username, or initials
-  --project-index=<pi>  If you have multiple projects, this is the index that the project shows up in my prompt
-                        This is useful if you do not want to be prompted, and then you can pipe the output
+  --project-index=<pi>  If you have multiple projects, this is the index that
+                        the project shows up in my prompt. This is useful if
+                        you do not want to be prompted, and then you can pipe
+                        the output
+  --show-finished       Show finished (but undelivered) stories, if your
+                        workflow requires this
+  --show-delivered      Show delivered stories, if your workflow requires this
 
 """
 
@@ -223,11 +228,14 @@ def scrum(project_name, stories, bugs):
     for owner in stories_by_owner:
         lines.append(bold(owner))
         for story in stories_by_owner[owner]:
+            name = story.name
+            if story.state in ['finished', 'delivered']:
+                name = '{}: {}'.format(bold(story.state), name)
             lines.append("   #{:12s}{:9s} {:7s} {}".format(
                 story.story_id,
                 estimate_visual(story.estimate),
                 story.story_type,
-                story.name))
+                name))
 
         lines.append('')
 
@@ -548,9 +556,12 @@ def main():
         browser_open(arguments['<story_id>'], arguments)
     elif arguments['scrum']:
         project = prompt_project(arguments)
-        lines = scrum(project.name,
-                      project.in_progress_stories(),
-                      project.open_bugs())
+        lines = scrum(
+            project.name,
+            project.in_progress_stories(
+                arguments.get('--show-finished', False),
+                arguments.get('--show-delivered', False)),
+            project.open_bugs())
     elif arguments['poker'] or arguments['planning']:
         project = prompt_project(arguments)
         poker(project)
